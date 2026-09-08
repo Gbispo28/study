@@ -21,7 +21,7 @@ Modern cognitive SLA (VanPatten, 2004; Doughty & Long, 2003; Schmidt, 1990) refi
 - **Input is Necessary but Not Sufficient**: Comprehensible input provides the essential raw linguistic data for internal hypothesis formulation.
 - **The Noticing Hypothesis (Schmidt, 1990)**: Input does not become **intake** unless the learner consciously notices the target linguistic features in the input.
 - **Input Processing Theory (VanPatten, 2004)**: Learners process input for meaning before form. Unless prompted or scaffolded, learners prioritize content words (nouns/verbs) and completely overlook grammatical inflections (e.g., third-person *-s*, past tense *-ed*).
-- **The $i+1$ Operational Standard**: Input is effectively $i+1$ only when $\ge 95\%$ of running lexical tokens are already known. If coverage drops below 90%, the input is $i+10$—inducing cognitive chaos, guesswork, and fatigue.
+- **The $i+1$ Operational Target**: Target approximate lexical coverage of ~95% for scaffolded input, modulated by domain schema and visual/audio support. While not a rigid biological cliff, unassisted input with low lexical coverage risks cognitive overload, excessive guesswork, and fatigue.
 
 ### 2.2 Psycholinguistics of L2 Listening: Bottom-Up vs. Top-Down Processing
 John Field (2008, *Listening in the Language Classroom*) and Vandergrift & Goh (2012) elucidate why listening is typically the most anxiety-inducing and difficult skill for adult beginners:
@@ -68,7 +68,7 @@ Spoken General American English (GAE) alters word boundaries systematically:
 
 1. **No Raw Unscaffolded Audio for Beginners**: Audio presented to A0–A1 learners must be accompanied by synchronized transcripts or pedagogical captions.
 2. **Connected Speech Explicit Instruction**: The curriculum must explicitly teach GAE connected speech rules (flapping, reductions, weak forms) early to prevent acoustic alienation.
-3. **Graded Reader Integration**: Reading assignments during Months 1–6 must utilize calibrated Graded Readers or AI-generated texts programmatically verified to match the learner's current known lemma registry at $\ge 95\%$ coverage.
+3. **Graded Reader Integration**: Reading assignments during Months 1–6 should utilize calibrated Graded Readers or scaffolded texts targeting high lexical accessibility (~95% coverage target), supplemented by contextual glosses.
 4. **Bimodal Default**: Default mode for receptive study is **Reading-While-Listening** (audio paired with text), transitioning to pure audio-only listening after the text has been decoded.
 
 ---

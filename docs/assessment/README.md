@@ -1,6 +1,6 @@
 # Diagnostic & Assessment System: English Learning OS
 
-> **Core Pedagogical Directive**: *Never assume a flat A0/A1 proficiency without deterministic measurement. Never collapse multi-dimensional linguistic skills into a single scalar score. Avoid false psychometrics.*
+> **Core Pedagogical Directive**: *Never assume a flat A0/A1 proficiency without deterministic measurement. Never collapse multi-dimensional linguistic skills into a single scalar score. Avoid false psychometrics, fake precision, and test item leakage.*
 
 ---
 
@@ -8,73 +8,77 @@
 
 The **English Learning OS Diagnostic System** provides an objective, scientifically grounded framework for establishing the learner's multi-dimensional baseline competence, identifying specific cognitive and phonological bottlenecks, and tracking measurable longitudinal acquisition over time.
 
-### 1.1 Crucial Regulatory & Legal Disclaimers
-1. **Not a Certified CEFR Examination**: The English Learning OS Diagnostic Pack is an **internal diagnostic and curriculum-routing instrument**. It is **NOT an officially accredited, certified, or endorsed examination** by the Council of Europe, Cambridge Assessment, ETS, or any formal accreditation body. It provides formative profiling to optimize daily 60-minute study allocations, not legal or academic certification.
-2. **Copyright & Original Item Protection**: References to the Council of Europe CEFR Companion Volume (2020), the English Profile (EVP/EGP), and Paul Nation's Vocabulary Levels Tests (VLT) represent scholarly methodological attribution. All specific test prompts, audio scenarios, reading passages, and items within this pack are custom-authored for the English Learning OS and labeled as unstandardized diagnostic items.
+### 1.1 Crucial Regulatory & Psychometric Disclaimers
+1. **Formative Diagnostic Instrument**: The English Learning OS Diagnostic Pack is an **internal diagnostic profiling and curriculum-routing instrument**. It is **NOT an officially accredited, certified, or endorsed examination** by the Council of Europe, Cambridge Assessment, ETS, or any formal accreditation body. It provides formative profiling to optimize daily 60-minute study allocations, not legal or academic certification.
+2. **Explicit Measurement Ceiling (Pre-A1 to B2)**: The custom battery reliably profiles performance from **Pre-A1 through B2**. When learner performance approaches ceiling across all tasks, the system reports `ABOVE CURRENT INSTRUMENT CEILING — EXTERNAL/EXTENDED ASSESSMENT REQUIRED`. High-level proficiency (C1/C2) is never inferred from single isolated extension items.
+3. **Separated Learner & Admin Surfaces**: To prevent test contamination and preserve measurement integrity, all answer keys, audio scripts, and scoring criteria are strictly segregated into administrative files and are never visible to the test-taker during administration.
+4. **Copyright & Original Item Protection**: References to the Council of Europe CEFR Companion Volume (2020), the English Profile (EVP/EGP), and Paul Nation's Vocabulary Levels Tests (VLT) represent scholarly methodological attribution. All specific test prompts, audio scenarios, reading passages, and items within this pack are custom-authored for the English Learning OS.
 
 ---
 
-## 2. Diagnostic Pack Architecture
+## 2. Assessment Architecture & Directory Structure
 
-The assessment framework comprises six dedicated specifications:
+The assessment framework is organized into dedicated surfaces:
 
-| Document | Purpose & Scope | Target Modalities |
+```text
+docs/assessment/
+├── README.md                           # System overview & directory guide (this file)
+├── LEARNER_INTAKE.md                   # Pre-test questionnaire (lifestyle, hardware, history)
+├── CEFR_RUBRIC.md                      # Qualitative rubrics across communicative modes
+├── RETEST_PROTOCOL.md                  # Longitudinal monitoring & alternate-form rules
+├── learner/                            # LEARNER-FACING SURFACES (Zero answer/script leakage)
+│   ├── BASELINE_FORM.md                # Clean test form with prompts & instructions
+│   └── SUBMISSION_TEMPLATE.md          # Response sheet for written answers & recording refs
+└── admin/                              # ADMINISTRATIVE SURFACES (Confidential to evaluator)
+    ├── ADMINISTRATION_PROTOCOL.md      # Audio delivery, speech rates, playback policies
+    ├── AUDIO_SCRIPT.md                 # Full transcripts & IPA annotations of audio stimuli
+    ├── ITEM_KEY.md                     # Definitive answer keys & acceptable variations
+    └── SCORING_GUIDE.md                # Evaluation rules, ceiling logic, bottleneck engine
+```
+
+### 2.1 File Map & Functional Roles
+
+| Surface | File | Role & Scope |
 | :--- | :--- | :--- |
-| [BASELINE_PROTOCOL.md](./BASELINE_PROTOCOL.md) | Standardized multi-dimensional test battery administered at Day 0 (Pre-A1 to C2 adaptive routing). | Listening, Reading, Speaking, Pronunciation, Writing, Grammar, Vocabulary (7 battery parts). |
-| [CEFR_RUBRIC.md](./CEFR_RUBRIC.md) | Qualitative rubrics grounded in the Council of Europe CEFR Companion Volume (2020) spanning Pre-A1 through C2. | Pre-A1 to C2 descriptors for Reception, Production, Interaction, and Phonological Control. |
-| [LEARNER_INTAKE.md](./LEARNER_INTAKE.md) | High-information questionnaire capturing operational lifestyle, device, and environmental variables. | Study schedules, auditory equipment, prior exposure, affective comfort, daily SRS tolerance. |
-| [SCORING_MODEL.md](./SCORING_MODEL.md) | Deterministic scoring algorithms producing the 9-dimensional state vector $\vec{P}$ and identifying the primary bottleneck. | Algorithmic scoring rules, confidence ratings, boundary bands (`A2-high / B1-low`), bottleneck detection. |
-| [RETEST_PROTOCOL.md](./RETEST_PROTOCOL.md) | Research-derived longitudinal tracking schedule designed to mitigate practice effects and measurement noise. | Weekly leading indicators vs. periodic lagging outcome retests. |
+| **Intake** | [LEARNER_INTAKE.md](./LEARNER_INTAKE.md) | Captures lifestyle schedule, available devices, language history, and subjective comfort. |
+| **Learner** | [learner/BASELINE_FORM.md](./learner/BASELINE_FORM.md) | Standardized test form containing questions, passages, and prompts (zero answers or scripts). |
+| **Learner** | [learner/SUBMISSION_TEMPLATE.md](./learner/SUBMISSION_TEMPLATE.md) | Formatted response sheet for learner submissions and audio recording attachments. |
+| **Admin** | [admin/ADMINISTRATION_PROTOCOL.md](./admin/ADMINISTRATION_PROTOCOL.md) | Audio standardization (TTS/human, wpm rates), playback count, environment rules. |
+| **Admin** | [admin/AUDIO_SCRIPT.md](./admin/AUDIO_SCRIPT.md) | Complete transcripts, IPA phonetic transcriptions, and acoustic target notes. |
+| **Admin** | [admin/ITEM_KEY.md](./admin/ITEM_KEY.md) | Definitive keys, acceptable response variations, and objective scoring keys. |
+| **Admin** | [admin/SCORING_GUIDE.md](./admin/SCORING_GUIDE.md) | Qualitative descriptor scoring, B2 ceiling logic, non-parametric uncertainty, bottleneck engine. |
+| **Rubric** | [CEFR_RUBRIC.md](./CEFR_RUBRIC.md) | Qualitative CEFR descriptors (Pre-A1 to C2) across 5 core communicative dimensions. |
+| **Retest** | [RETEST_PROTOCOL.md](./RETEST_PROTOCOL.md) | 90-day operational retest cycle, alternate-form pool (Forms A/B/C), practice effect mitigation. |
 
 ---
 
-## 3. The 9-Dimensional State Vector $\vec{P}$ Across Pre-A1 to C2
+## 3. The 9-Dimensional State Vector $\vec{P}$ (Pre-A1 to B2)
 
-```
-                        ┌─────────────────────────────────────┐
-                        │ Multi-Dimensional Baseline Profile  │
-                        │    Vector P: Pre-A1 through C2      │
-                        └──────────────────┬──────────────────┘
-                                           │
-         ┌───────────────────┬─────────────┼─────────────┬───────────────────┐
-         ▼                   ▼             ▼             ▼                   ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────┴─────┐ ┌─────────────────┐ ┌─────────────────┐
-│ 1. Auditory     │ │ 2. Text         │ │ 3. Oral   │ │ 4. Articulatory │ │ 5. Written      │
-│    Listening    │ │    Reading      │ │    Speech │ │    Phonetics    │ │    Composition  │
-│ (Connected      │ │ (Lexical &      │ │ (Fluency &│ │ (Minimal pairs, │ │ (Sentence       │
-│  speech, rate)  │ │  inferencing)   │ │  repair)  │ │  epenthesis)    │ │  combining)     │
-└─────────────────┘ └─────────────────┘ └───────────┘ └─────────────────┘ └─────────────────┘
-                                           │
-                            ┌──────────────┴──────────────┐
-                            ▼                             ▼
-                   ┌─────────────────┐           ┌─────────────────┐
-                   │ 6. Functional   │           │ 7. Lexical Size │
-                   │    Grammar      │           │    & Depth      │
-                   │ (Sentence       │           │ (VLT K1–K5+     │
-                   │  frames)        │           │  receptive/prod)│
-                   └─────────────────┘           └─────────────────┘
-```
+The system models competence as an asynchronous multi-dimensional vector:
+
+$$\vec{P} = \langle L, R, SP, SI, W, PC, GC, VR, VP \rangle$$
+
+- **$L$ (Acoustic Listening)**: Evaluated through speech reduction discrimination and micro-dictation.
+- **$R$ (Text Reading)**: Evaluated through workplace narrative comprehension and inferencing.
+- **$SP$ (Spoken Monologue)**: Evaluated via 60–90s recorded daily routine description.
+- **$SI$ (Spoken Interaction)**: Evaluated via recorded workplace scenario explanation.
+- **$W$ (Written Composition)**: Evaluated via sentence combining and workplace message synthesis.
+- **$PC$ (Phonological Control)**: Evaluated via minimal pair perception and read-aloud production.
+- **$GC$ (Operational Grammar)**: Evaluated via functional grammatical patterns in context.
+- **$VR$ (Receptive Lexical Band Familiarity)**: Evaluates familiarity across K1, K2, K3 bands (no fake continuous size extrapolation).
+- **$VP$ (Productive Lexical Recall)**: Evaluated through lexical precision in spoken/written tasks.
 
 ---
 
-## 4. Administration & Adaptive Routing Sequence
+## 4. Administration Sequence
 
-To prevent fatigue and eliminate ceiling or floor bias:
-- **Session 1: Receptive & Lexical Baseline (~35 min)**:
-  - Step 1: Complete [LEARNER_INTAKE.md](./LEARNER_INTAKE.md) (10 min).
-  - Step 2: Part G — Vocabulary Levels Sampling (10 min).
-  - Step 3: Part A — Auditory Listening Comprehension (15 min).
-- **Session 2: Productive & Articulatory Baseline (~30 min)**:
-  - Step 4: Part B — Reading Comprehension (10 min).
-  - Step 5: Part D — Pronunciation & Minimal Pair Perception/Production (10 min).
-  - Step 6: Part C & E — Spoken Interaction & Written Sentence Combining (10 min).
-
-**Adaptive Early Stopping**: If accuracy drops below 40% on an initial core tier, testing in that dimension stops immediately to avoid invalid guessing and frustration. If accuracy exceeds 85%, optional extension items advance toward higher bands (up to C1/C2).
-
----
-
-## 5. Epistemic Principles Governing Assessment
-
-1. **Deterministic Scoring**: Evaluators must adhere to explicit rubric criteria in [CEFR_RUBRIC.md](./CEFR_RUBRIC.md); intuitive guessing is forbidden.
-2. **Non-Parametric Uncertainty Modeling**: Rejects fictitious statistical "confidence intervals". Employs transparent `Confidence Rating` (`High`, `Medium`, `Low`), `Uncertainty Category`, `Evidence Sufficiency`, and `Boundary Band` classifications (`A2-high / B1-low`).
-3. **Decoupled Competencies**: Receptive skills (reading/listening) are decoupled from productive skills (speaking/writing) to reflect the learner's true asymmetric competence.
+To prevent cognitive fatigue and maintain valid focus:
+- **Session 1: Receptive & Lexical Baseline (~25 min)**:
+  - Part A: Auditory Listening Comprehension (Tasks A1 & A2).
+  - Part B: Reading Comprehension (Task B1).
+  - Part G: Lexical Familiarity Probe (Sections 1–3).
+- **Session 2: Productive & Articulatory Baseline (~25 min)**:
+  - Part C: Spoken Monologue & Scenario (`spoken_c1.m4a`, `spoken_c2.m4a`).
+  - Part D: Pronunciation Perception & Read-Aloud (`spoken_d2.m4a`).
+  - Part E: Sentence Combining & Workplace Message.
+  - Part F: Operational Grammar in Use.

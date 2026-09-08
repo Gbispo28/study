@@ -3,7 +3,7 @@
 - **Date**: 2026-09-08
 - **Domain**: Instructional Design, Cognitive Budgeting, Habit Architecture
 - **Primary Investigator**: Product Architect & Orchestrator
-- **Epistemic Classification**: `STRONG EVIDENCE` (Cognitive Load & Time-Boxing) / `EXPERT CONSENSUS` (Deliberate Practice Scheduling)
+- **Epistemic Classification**: `CONFIRMED PRODUCT CONSTRAINT` (Learner Commitment) / `MODERATE EVIDENCE` (Cognitive Load & Modality Interleaving)
 
 ---
 
@@ -15,9 +15,9 @@ How should exactly 60 minutes of daily deliberate English study be operationally
 
 ## 2. Core Operational Principles: Policy Before Mathematics
 
-### 2.1 The Inviolable 60-Minute Daily Timebox
-- **Human Reality**: The learner is a working professional dedicating exactly 60 focused minutes per day to language acquisition.
-- **Cognitive Load & Deliberate Practice**: High-intensity deliberate practice exhibits steep diminishing returns beyond 50–60 minutes per day for working adults (Ericsson, 2006; Sweller, 2011). Exceeding 60 minutes risks cognitive fatigue, habit erosion, and abandonment.
+### 2.1 The 60-Minute Ceiling: Learner Constraint vs. Biological Threshold
+- **Canonical Formulation**: *The 60-minute daily ceiling is a learner-defined operational constraint, not a biological or neurological threshold.*
+- **Role of Learning Science**: Learning science does not prove that 60 minutes is an exact biologically optimal ceiling for all humans. Rather, cognitive load theory (Sweller, 2011) and deliberate practice literature (Ericsson, 2006) inform **how to allocate that time effectively**, preventing working-memory exhaustion and balancing active retrieval with comprehensible input.
 - **Strict Prohibition of Fake Precision**: We reject pseudo-mathematical optimization formulas that pretend to calculate human learning down to decimal percentages. The system relies on **clear operational rules, priority hierarchies, and cognitive boundaries**.
 
 ### 2.2 Core Study vs. Ambient / Bonus Exposure

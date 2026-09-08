@@ -26,7 +26,7 @@
 ---
 
 ## 4. Comprehensible Input with Conscious Noticing ($i+1$)
-- **Lexical Coverage Threshold**: Comprehensible input requires that $\ge 95\%$ of running words in any reading or listening material are already known to the learner. Texts with $<90\%$ coverage induce cognitive overload and are strictly forbidden as unassisted study tasks.
+- **Lexical Coverage Targets**: Receptive study targets ~95% lexical coverage for scaffolded input and ~98% for fluent extensive reading. These thresholds represent probabilistic accessibility targets rather than rigid biological cliffs, modulated dynamically by domain familiarity, glossing, and visual/multimodal scaffolding.
 - **Bimodal Primacy**: Receptive input for beginner and elementary stages (Pre-A1 to A2) should prioritize bimodal delivery (reading-while-listening with synchronized high-quality native audio) to bridge acoustic segmentation gaps and reinforce phoneme-grapheme correspondences.
 - **Schmidt's Noticing Principle**: Exposure alone does not guarantee acquisition. Materials must visually or acoustically highlight target structures, collocations, and grammatical markers to ensure they convert from input into intake.
 
@@ -40,7 +40,7 @@
 ---
 
 ## 6. Immediate, Actionable & Scaffolding Feedback
-- **No Ambiguous Recasts for Beginners**: Pure conversational recasts are heard by lower-proficiency learners as semantic agreements rather than linguistic corrections. Corrective feedback must be immediate, explicit, and actionable.
+- **Prompts & Explicit Modeling**: Pure conversational recasts are frequently heard by lower-proficiency learners as semantic agreements rather than linguistic corrections. Corrective feedback must provide concise explicit modeling for unfamiliar target forms, and prompts to elicit learner self-repair for emergent structures.
 - **No Ghostwriting by AI**: Generative AI must never silently rewrite the learner's writing or speak for them. AI feedback must follow the 4-step scaffolding protocol: 1) Validate meaning $\rightarrow$ 2) Highlight up to 2 target errors $\rightarrow$ 3) Elicit learner revision $\rightarrow$ 4) Provide target model.
 
 ---
@@ -56,16 +56,17 @@
 ---
 
 ## 8. Inviolable 60-Minute Daily Ceiling (Policy Before Mathematics)
-- **Hard Daily Timebox**: Deliberate daily study is strictly capped at **60 focused minutes**. Exceeding this boundary induces cognitive fatigue, diminishes returns, and risks habit abandonment.
+- **Learner-Defined Constraint**: The 60-minute daily ceiling is a confirmed learner-defined operational constraint, not an immutable biological threshold. Cognitive load principles govern how to divide that time, not why 60 is biologically optimal.
 - **Core vs. Ambient Separation**: The system must remain fully functional and achieve its learning milestones if ambient/passive exposure is exactly zero. Optional ambient exposure (podcasts, entertainment) must never be counted toward the 60-minute core commitment.
 - **Workload Throttling Rule**: If daily SRS reviews exceed 15 minutes, the system must automatically set new card introductions to zero until the review queue stabilizes.
 
 ---
 
-## 9. Multi-Dimensional Competence & Uncapped CEFR Range
-- **No Flattened Proficiency**: The learner's proficiency is an asynchronous multi-dimensional vector $\vec{P}$ spanning **Pre-A1 through C2**, never a single scalar. A learner may be B2 in technical reading while Pre-A1 in spontaneous oral production.
-- **Target the Bottleneck**: Study routines must dynamically prioritize the learner's current primary communicative bottleneck.
-- **No False Psychometrics**: Rejects fake statistical confidence intervals. Reports qualitative confidence ratings and boundary bands (`A2-high / B1-low`).
+## 9. Multi-Dimensional Competence & Qualitative Profiling
+- **No Flattened Proficiency**: The learner's proficiency is an asynchronous multi-dimensional vector $\vec{P}$ evaluated against CEFR descriptors, never a single scalar. A learner may be B2 in reading while Pre-A1 in spontaneous oral production.
+- **Explicit Measurement Ceiling**: The internal diagnostic battery has an explicit measurement ceiling at **B2**; higher proficiencies (C1/C2) serve as target references and require extended or external certified assessment.
+- **Target the Bottleneck**: Study routines must dynamically prioritize the learner's primary communicative bottleneck, evaluated across severity, communicative impact, and remediation leverage.
+- **No False Psychometrics**: Rejects fake statistical confidence intervals and continuous vocabulary size extrapolations from tiny item probes. Reports qualitative confidence ratings and boundary bands (`A2-high / B1-low`).
 
 ---
 

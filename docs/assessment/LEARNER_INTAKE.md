@@ -92,4 +92,4 @@ Do you have passive windows (e.g., commuting, gym, walking, cooking) where you w
 ## Submission & Processing
 
 1. Learner records answers directly in this document or submits responses via text.
-2. The responses are parsed by the **Context Curator** and ingested into [SCORING_MODEL.md](./SCORING_MODEL.md) to initialize the dynamic routine parameters for Phase 03.
+2. The responses are parsed by the **Context Curator** and ingested alongside [learner/BASELINE_FORM.md](./learner/BASELINE_FORM.md) into [admin/SCORING_GUIDE.md](./admin/SCORING_GUIDE.md) to initialize the dynamic routine parameters for Phase 03.

@@ -3,17 +3,17 @@
 ## Current Iteration: Milestone 2 (Phase 02 — Product Discovery & SLA Specification)
 *Iteration Status: Specification Delivered — Gated on Learner Baseline Administration*
 
-- [x] **TASK-020**: Formulate standardized multi-dimensional diagnostic test battery ([BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md)).
+- [x] **TASK-020**: Formulate standardized multi-dimensional diagnostic test battery ([learner/BASELINE_FORM.md](../assessment/learner/BASELINE_FORM.md)).
 - [x] **TASK-021**: Formulate CEFR-aligned qualitative rubrics spanning Pre-A1 to C2 ([CEFR_RUBRIC.md](../assessment/CEFR_RUBRIC.md)).
 - [x] **TASK-022**: Author concise learner intake questionnaire ([LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md)).
-- [x] **TASK-023**: Design deterministic scoring model and non-parametric uncertainty profiling ([SCORING_MODEL.md](../assessment/SCORING_MODEL.md)).
+- [x] **TASK-023**: Design deterministic scoring guide, B2 measurement ceiling, and bottleneck engine ([admin/SCORING_GUIDE.md](../assessment/admin/SCORING_GUIDE.md)).
 - [x] **TASK-024**: Specify longitudinal retesting protocol and alternate forms based on L2 acquisition rates ([RETEST_PROTOCOL.md](../assessment/RETEST_PROTOCOL.md)).
 - [x] **TASK-025**: Build comprehensive evidence matrix and audit repository hypotheses ([EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md)).
 - [x] **TASK-026**: Conduct research reviews across 10 specialized domains (`0001` through `0010` in `docs/research/`).
 - [x] **TASK-027**: Author canonical pedagogical invariants ([LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md)).
 - [x] **TASK-028**: Synthesize master Phase 02 system specification ([LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md)).
 - [x] **TASK-029**: Audit and update product requirements ([REQUIREMENTS.md](../product/REQUIREMENTS.md)).
-- [ ] **TASK-030 (GATING BLOCKER)**: Receive learner responses to [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md) and [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md), compute state vector $\vec{P}$, detect bottleneck, and formally close Gate 2.
+- [ ] **TASK-030 (GATING BLOCKER)**: Receive learner responses to [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md) and [learner/BASELINE_FORM.md](../assessment/learner/BASELINE_FORM.md), compute state vector $\vec{P}$ via [admin/SCORING_GUIDE.md](../assessment/admin/SCORING_GUIDE.md), detect bottleneck, and formally close Gate 2.
 
 ---
 

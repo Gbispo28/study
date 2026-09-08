@@ -40,11 +40,13 @@
 - **DEC-002**: Custom agent hierarchy is explicit: `orchestrator` is `mainAgent: true, subagent: false`; all specialists are `mainAgent: false, subagent: true` with `sandbox` policy.
 - **DEC-003**: `code-auditor` and `security-reviewer` are restricted to read-only tools to preserve adversarial independence.
 - **DEC-004**: Storing literal `${...}` in `mcp_config.json` is rejected due to runtime lack of interpolation; GitHub MCP is deferred to local/official authentication.
-- **DEC-005**: FSRS Desired Retention is set to **90%** ($R = 0.90$) as the initial default for core foundational vocabulary, revising the previous 85% hypothesis. CMRR is used as reference.
+- **DEC-005**: FSRS Desired Retention is set to **90%** ($R = 0.90$) as the initial default for core foundational vocabulary, revising the previous 85% hypothesis. Legacy CMRR was removed in Anki 25.07; workload trade-offs are guided by native Anki Simulator and Help Me Decide.
 - **DEC-006**: Contrastive phonetics prioritizes **epenthesis suppression on word-final stops** and **word stress** over native-accent eradication, accounting for BP regional dialect variation.
 - **DEC-007**: The 60-minute daily budget is governed by a **modular 3-block architecture** (15m Retrieval / 30m Input / 15m Production) with automatic workload throttling.
 - **DEC-008**: Hypotheses audited: HYP-01 revised (abandoned exact 2x retention claim); HYP-02 revised (unvalidated 85% parameter replaced with 90% default); HYP-03 revised (absolute fossilization prevention replaced with continuous contrastive training); HYP-04 supported (structured AI dialogue reduces anxiety).
 - **DEC-009**: Phase 02 remains formally **OPEN** under `GATE 2: BLOCKED ON LEARNER BASELINE`. Phase 03 is locked until learner diagnostic data is submitted.
+- **DEC-010**: Assessment architecture strictly segregates learner surfaces (`docs/assessment/learner/`) from administrative surfaces (`docs/assessment/admin/`) to prevent test answer and audio script contamination.
+- **DEC-011**: The custom diagnostic battery operates under an explicit measurement ceiling at **B2**, reporting `ABOVE CURRENT INSTRUMENT CEILING` for advanced performances rather than making pseudo-psychometric C1/C2 claims.
 
 ---
 
@@ -53,7 +55,7 @@
 - **Development Hardware**: MacBook Air M4 (macOS desktop workstation).
 - **Target Mobile Companion**: Galaxy S24 Ultra (Android mobile companion for AnkiDroid & Gemini Live).
 - **Installed Runtimes**: Python 3.14.6, Git 2.50.1, Node v24.14.1.
-- **Primary AI Platforms (Current 2026)**: Google AI Pro (Gemini 3.1 Pro, Gemini Live, NotebookLM Audio Overview), Claude Code Pro.
+- **Primary AI Platforms (Current 2026)**: Google AI Pro (Gemini 3.1 Pro, Gemini Live, NotebookLM Audio Overview with 300 sources/notebook), Claude Code Pro (using supported frontier models).
 - **Daily Timebox**: Strictly 60 focused minutes/day. Ambient exposure is tracked separately as optional bonus.
 
 ---
@@ -62,7 +64,7 @@
 
 - **ACTIVE BLOCKER**: Individualized calibration of state vector $\vec{P}$ and dynamic routine weights is **BLOCKED ON LEARNER BASELINE**.
   - *Required User Input 1*: Submission of answers to [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md).
-  - *Required User Input 2*: Completion and audio recording of [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md).
+  - *Required User Input 2*: Completion and audio recording of [learner/BASELINE_FORM.md](../assessment/learner/BASELINE_FORM.md).
 
 ---
 
@@ -70,8 +72,8 @@
 
 - **Milestone 2**: Phase 02 — Product Discovery & Learning Science Specification (**IN PROGRESS / BASELINE PENDING**)
   - Task 1: Learner completes intake questionnaire ([LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md)).
-  - Task 2: Learner executes diagnostic battery ([BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md)).
-  - Task 3: Ingest responses, score vector $\vec{P}$, detect bottleneck, and close Gate 2.
+  - Task 2: Learner executes diagnostic battery ([learner/BASELINE_FORM.md](../assessment/learner/BASELINE_FORM.md)).
+  - Task 3: Ingest responses, score vector $\vec{P}$ via [admin/SCORING_GUIDE.md](../assessment/admin/SCORING_GUIDE.md), detect bottleneck, and close Gate 2.
 - **Milestone 3**: Phase 03 — Daily Journey & Card Architecture (**LOCKED** until Gate 2 closes).
 
 ---

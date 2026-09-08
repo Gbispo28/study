@@ -33,14 +33,17 @@ Peter Skehan (1998, 2009) and Rod Ellis (2009) modeled the tripartite tension in
   - *Fluency Sessions*: 4/3/2 technique (Nation, 1989), self-talk, speed drills where errors are ignored.
   - *Accuracy Sessions*: Scaffolded dialogue drills, sentence frame production, where precise corrective feedback is provided.
 
-### 2.3 Corrective Feedback (CF): Recasts vs. Explicit Correction
-A major controversy in SLA concerns how errors should be corrected:
-- **Recast**: The interlocutor implicitly reformulates the learner's erroneous utterance without directly stating that an error occurred (Learner: *"He go to office yesterday."* $\rightarrow$ Tutor: *"Oh, he went to the office yesterday?"*).
-- **Explicit Correction**: The interlocutor explicitly points out the error and provides the correct form (Tutor: *"Not 'he go', say 'he went', because it happened yesterday."*).
-- **Metalinguistic Prompt**: Giving a clue without providing the form (Tutor: *"Remember past tense for 'go'?"*).
-- **The Empirical Evidence**:
-  - Lyster & Saito (2010) meta-analysis of 15 classroom studies ($N = 1,773$) revealed that **prompts and explicit correction significantly outperform recasts for developing target language accuracy**, particularly with lower-proficiency adult learners.
-  - Recasts fail with beginners because learners interpret them as semantic confirmations or conversational agreements rather than linguistic corrections (Lyster, 1998).
+### 2.3 Corrective Feedback (CF): Taxonomy & Empirical Trade-offs
+In cognitive SLA (Lyster & Ranta, 1997; Ellis, 2009; Lyster & Saito, 2010), oral corrective feedback is categorized into three distinct operational mechanisms:
+1. **Recasts (Implicit Reformulation)**: The interlocutor reformulates the learner's erroneous utterance without directly stating that an error occurred (e.g., Learner: *"He go to office yesterday."* $\rightarrow$ Partner: *"Oh, he went to the office yesterday?"*).
+2. **Prompts (Eliciting Learner Self-Repair)**: Signals that push the learner to self-correct without supplying the correct target form (e.g., clarification requests, metalinguistic clues, elicitation: *"Yesterday, so he...?"*).
+3. **Explicit Correction (Direct Modeling)**: The interlocutor explicitly identifies the error and directly provides the target grammatical form (e.g., *"Not 'he go'; say 'he went' because it happened yesterday."*).
+
+- **The Empirical Evidence & Category Distinctions**:
+  - In their meta-analysis of classroom oral feedback ($N = 1,773$), **Lyster & Saito (2010)** found that **prompts produced significantly larger effect sizes than recasts** for target-form accuracy. Prompts require effortful retrieval and push the learner to modify their output (Swain's Pushed Output).
+  - *Recasts vs. Beginners*: Beginners frequently perceive recasts as semantic confirmations or conversational agreements rather than linguistic corrections (Lyster, 1998; Nicholas et al., 2001).
+  - *Prompts vs. Explicit Correction*: Explicit correction directly provides the target form, which is necessary when the learner has not yet acquired the rule or form. Prompts, by contrast, stimulate active retrieval when the knowledge is emergent.
+  - *Pedagogical Recommendation*: Use a balanced strategy—when introducing completely new forms, provide concise explicit models; when reinforcing previously learned structures, use prompts to elicit learner self-repair rather than relying solely on ambiguous recasts.
 
 ---
 

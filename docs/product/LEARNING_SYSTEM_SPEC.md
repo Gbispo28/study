@@ -50,8 +50,10 @@ All curricular decisions trace directly to [EVIDENCE_MATRIX.md](../research/EVID
 ## 4. Assessment & Diagnostic Model
 
 - **Diagnostic Nature & Scope**: Internal formative profiling tool informed by CEFR descriptors. **Not an accredited or certified Council of Europe examination**.
-- **Item Copyright Protection**: Cites original frameworks (CEFR 2020, Cambridge EVP/EGP, Nation's VLT). All test items in [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md) are original custom diagnostic items.
-- **Adaptive Routing & Early Stopping**: Core A1/A2 routing with optional extension up to C1/C2 if performance warrants. Early stopping halts testing when accuracy drops $<40\%$ to prevent fatigue.
+- **Explicit Measurement Ceiling**: The internal custom diagnostic battery reliably profiles **Pre-A1 to B2**. Performance exceeding this instrument is flagged as `ABOVE CURRENT INSTRUMENT CEILING — EXTERNAL/EXTENDED ASSESSMENT REQUIRED`.
+- **Separated Learner & Admin Surfaces**: To prevent test contamination, all test prompts and recording guidelines are isolated in [learner/BASELINE_FORM.md](../assessment/learner/BASELINE_FORM.md), while audio scripts, answer keys, and scoring guides reside in `docs/assessment/admin/`.
+- **Item Copyright Protection**: Cites original frameworks (CEFR 2020, Cambridge EVP/EGP, Nation's VLT). All test items are original custom diagnostic items.
+- **Adaptive Routing & Early Stopping**: Core routing across Pre-A1 through B2. Early stopping halts testing in a dimension when accuracy drops below 40% to prevent cognitive fatigue.
 - **Longitudinal Schedule**: Derived from psycholinguistic research on practice effects and adult L2 acquisition rates; operationalized as weekly formative micro-checks, monthly vocabulary checks, and 90-day alternate-form milestone retests.
 
 ---
@@ -64,7 +66,7 @@ All curricular decisions trace directly to [EVIDENCE_MATRIX.md](../research/EVID
   - *Tier 2*: K2 Band (1,001–2,000 general lemmas).
   - *Tier 3*: K3 Band + High-Frequency Workplace/Data Lexis.
 - **Intentional + Incidental Hybrid**: Intentional SRS (Anki) rapidly primes receptive form-meaning recognition; scaffolded comprehensible input provides ecological consolidation and collocational depth.
-- **Coverage Filtering**: Materials assigned to the learner must maintain $\ge 95\%$ lexical coverage.
+- **Coverage Filtering**: Materials assigned to the learner target ~95% lexical coverage for scaffolded study and ~98% for fluent extensive reading, modulated dynamically by domain familiarity and glossing.
 
 ---
 
@@ -132,8 +134,11 @@ All curricular decisions trace directly to [EVIDENCE_MATRIX.md](../research/EVID
 ## 13. Spaced Repetition (SRS) & Card Architecture
 
 - **Scheduler Engine**: Native Anki **FSRS**.
-- **Desired Retention**: Initial default set to **0.90 (90%)** for core foundational vocabulary. Evaluated down to 0.87 or 0.85 only if mature review volume threatens the daily 15-minute timebox. Compute Minimum Recommended Retention (CMRR) used as analytical reference.
-- **Nonlinear Workload**: Acknowledges that workload scaling is rapid and nonlinear as retention approaches 1.0.
+- **Desired Retention**: Initial default set to **0.90 (90%)** for core foundational vocabulary (`OFFICIAL DEFAULT` & `PROJECT OPERATIONAL DEFAULT`). Evaluated dynamically via the native Anki Simulator and Help Me Decide once individual review logs accumulate. (Note: The experimental CMRR tool was removed in Anki 25.07).
+- **Scheduling Parameters**:
+  - *Learning / Relearning Steps*: Empty or `10m` (`CURRENT OFFICIAL GUIDANCE` / `EXPERIMENTAL`).
+  - *Maximum Interval*: Official default `36500d` (~100y) or project cap with documented workload trade-off.
+  - *Leech Threshold*: 4 lapses (`PROJECT OPERATIONAL DEFAULT` to protect the 15-minute SRS timebox).
 - **Card Schemas (4 Note Types)**:
   1. `CARD-01`: Lean Receptive Lemma (Top 500 concrete nouns/verbs).
   2. `CARD-02`: Contextual Sentence Cloze (Polysemy, collocations, grammar frames).
@@ -169,24 +174,24 @@ All curricular decisions trace directly to [EVIDENCE_MATRIX.md](../research/EVID
 
 ## 15. Metrics & Measurement Framework
 
-- **Leading Indicators (Daily/Weekly Behavior)**: Adherence rate ($\ge 85\%$), review queue clearance, true retention ($88\% - 92\%$), bimodal input volume ($\ge 2,000$ words/week), sentences vocalized ($\ge 15$/day).
-- **Lagging Outcomes (Periodic Mastery)**: Measured shift in the multi-dimensional vector $\vec{P}$, growth in validated receptive lemmas, unassisted connected speech comprehension, epenthesis suppression in spontaneous speech.
+- **Leading Indicators (Operational Starting Targets)**: Adherence rate ($\approx 85\%$, ~6/7 days), review queue clearance within 15 min, true retention ($88\% - 92\%$), bimodal input volume ($\approx 2,000$ words/week), sentences vocalized ($\approx 15$/day).
+- **Lagging Outcomes (Periodic Retests & Hypotheses)**: Measured shift in the multi-dimensional vector $\vec{P}$, confirmed expansion into K2/K3 lemmas, unassisted connected speech comprehension, epenthesis suppression in spontaneous speech.
 
 ---
 
 ## 16. Tool & Ecosystem Leverage (Verified September 2026)
 
-- **Google AI Pro (R$ 96,99/mês in Brazil)**: Access to Gemini 3.1 Pro, Antigravity rate limits, Workspace integration, Deep Research, 5TB storage. Gemini Live on Galaxy S24 Ultra serves as primary voice speaking partner; NotebookLM Audio Overview generates calibrated podcasts from user texts.
-- **Claude Code Pro**: Agentic engineering CLI for text frequency profiling, sentence mining extraction, deterministic validation, and card compilation. (Not a voice tutor).
+- **Google AI Pro (R$ 96,99/mês in Brazil as of Sep 2026)**: Access to Gemini 3.1 Pro, Antigravity rate limits, Workspace integration, Deep Research, 5TB storage. Gemini Live on Galaxy S24 Ultra serves as primary voice speaking partner; NotebookLM (up to 300 sources per notebook in Pro) Audio Overview generates calibrated podcasts from user texts.
+- **Claude Code Pro**: Agentic engineering CLI for text frequency profiling, sentence mining extraction, deterministic validation, and card compilation using currently supported frontier models under the learner's plan. (Not a voice tutor).
 - **MacBook Air M4**: Deep workstation for 40-minute input/production blocks, Anki desktop management, local whisper transcription.
 - **Galaxy S24 Ultra**: Mobile companion for 15-minute AnkiDroid reviews, Gemini Live spoken practice, ambient audio listening, S-Pen handwriting.
-- **Curated Free Resources**: Cambridge Learner's Dictionary, YouGlish, Forvo, COCA, VOA Learning English, Project Gutenberg.
+- **Curated Free Resources**: Cambridge Learner's Dictionary, YouGlish, Forvo, COCA, VOA Learning English, Project Gutenberg (public-domain source corpus for selected/adapted texts).
 
 ---
 
 ## 17. Tracked Open Questions & Dependencies
 
-- **[DEP-01] Learner Diagnostic Execution**: Calibration of vector $\vec{P}$ and dynamic routine weights depends on the learner completing [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md) and [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md).
+- **[DEP-01] Learner Diagnostic Execution**: Calibration of vector $\vec{P}$ and dynamic routine weights depends on the learner completing [learner/BASELINE_FORM.md](../assessment/learner/BASELINE_FORM.md) and [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md).
 - **[DEP-02] Anki Sync Strategy**: Selection between AnkiWeb cloud sync or local AnkiConnect desktop automation (deferred to Phase 03).
 - **[DEP-03] Audio Generation Provider**: Evaluation of local vs cloud TTS for card audio (deferred to Phase 04 ADR).
 
@@ -195,9 +200,9 @@ All curricular decisions trace directly to [EVIDENCE_MATRIX.md](../research/EVID
 ## 18. Phase 03 Input Contract & Gate Status
 
 Phase 03 (**Daily Journey & Card Architecture**) requires as its mandatory starting input:
-1. The learner's completed diagnostic test data and computed vector $\vec{P}$.
+1. The learner's completed diagnostic test data and computed vector $\vec{P}$ from [admin/SCORING_GUIDE.md](../assessment/admin/SCORING_GUIDE.md).
 2. The 4 standardized card taxonomies defined in Section 13.
-3. The FSRS configuration parameters ($R = 0.90$, steps = `10m`, max interval = `365d`, 4-lapse leech policy).
+3. The FSRS configuration parameters ($R = 0.90$, steps = `10m` or empty, 4-lapse leech policy).
 4. The 3-block modular timebox (15m SRS / 30m Input / 15m Output).
 5. The 4-step AI corrective feedback scaffolding protocol.
 

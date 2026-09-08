@@ -2,7 +2,7 @@
 
 > **Source Framework**: Grounded in the *Common European Framework of Reference for Languages: Learning, Teaching, Assessment – Companion Volume* (Council of Europe, 2020).
 > **Scope**: Qualitative rubrics spanning the full spectrum: **Pre-A1, A1, A2, B1, B2, C1, and C2**.
-> **Regulatory Disclaimer**: This rubric is designed for internal diagnostic profiling and curriculum adaptation within the English Learning OS. It does **NOT constitute an official or accredited Council of Europe certification examination**.
+> **Regulatory & Measurement Scope Disclaimer**: This rubric is designed for internal diagnostic profiling and curriculum adaptation within the English Learning OS. It does **NOT constitute an official or accredited Council of Europe certification examination**. Furthermore, the internal custom diagnostic battery operates with an explicit measurement ceiling at **B2**; descriptors for C1 and C2 serve as target proficiency references and require extended or external certified examination.
 
 ---
 

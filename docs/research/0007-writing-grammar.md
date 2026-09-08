@@ -3,7 +3,7 @@
 - **Date**: 2026-09-08
 - **Domain**: L2 Writing, Form-Focused Instruction, Generative Feedback
 - **Primary Investigator**: Learning Science Researcher & Orchestrator
-- **Epistemic Classification**: `STRONG EVIDENCE` (Focus on Form & Sentence Combining) / `STRONG EVIDENCE` (Written Corrective Feedback)
+- **Epistemic Classification**: `MODERATE EVIDENCE` (Focus on Form & Written Corrective Feedback) / `LIMITED TO MODERATE EVIDENCE` (Sentence Combining in Adult L2)
 
 ---
 
@@ -31,14 +31,17 @@ The Cambridge English Grammar Profile provides corpus-verified empirical evidenc
 
 ---
 
-## 3. Evidence-Based Written Production Techniques
+## 3. Written Production Techniques: Operational Scaffolding
 
-### 3.1 Sentence Combining (Saddler & Graham, 2005)
-- **Mechanism**: Rather than diagramming sentences or writing long essays that overwhelm an A1/A2 learner's working memory, the learner is given two or three simple kernel sentences and tasked with combining them into one syntactically complex sentence using specific connectors or relative clauses:
+### 3.1 Sentence Combining: Mechanism & Empirical Scope
+- **Mechanism**: Rather than diagramming sentences or writing unstructured long essays that overwhelm an A1/A2 learner's working memory, the learner is presented with two or three simple kernel clauses and guided to synthesize them into one grammatically coherent sentence using specific conjunctions or relative pronouns:
   - *Kernel*: The server crashed. The database query was too slow.
   - *Combined*: The server crashed because the database query was too slow.
   - *Combined (Advanced)*: When the slow database query timed out, the server crashed.
-- **Empirical Evidence**: Graham & Perin (2007) meta-analysis of writing interventions identified **sentence combining as one of the highest-impact writing interventions** ($d = 0.70$) for improving syntactic maturity and grammatical accuracy.
+- **Epistemic Audit & Population Boundaries**:
+  - *L1 Schooling vs. Adult L2*: Seminal writing intervention studies (e.g., Saddler & Graham, 2005; Graham & Perin, 2007) investigated **L1 adolescent and elementary school writers** (e.g., fourth-grade students), reporting large effect sizes ($d \approx 0.70$) for syntactic complexity.
+  - *Adult L2 Reality*: Systematic reviews in second-language contexts (e.g., Andrews et al., 2006) emphasize that high-quality randomized evidence directly establishing sentence combining superiority for adult EFL/ESL professionals is limited. The $d = 0.70$ metric cannot be assumed as a universal transfer rate to adult Brazilian L2 writers.
+  - *Operational Status*: Sentence combining is adopted within the English Learning OS as an **operational scaffolding technique**, not an infallible psycholinguistic panacea. It provides a low-stress mechanism for practicing clause coordination and subordination without cognitive overload.
 
 ### 3.2 Controlled Prompt Composition
 For adult professionals, writing should mirror authentic, low-volume professional discourse:

@@ -33,11 +33,14 @@ Natural language adheres to Zipf's law: word frequency is inversely proportional
   - **Top 3,000 Lemmas (K3)**: Covers ~88–92% of running tokens.
   - **Beyond K3**: Diminishing returns accelerate. Moving from 3,000 to 9,000 lemmas yields only an additional 5–7% text coverage.
 
-### 2.3 Paul Nation's Lexical Coverage Thresholds
-Paul Nation's seminal research (2001, 2006, 2013) establishes the cognitive thresholds of lexical coverage for text comprehension:
-- **95% Lexical Coverage**: The absolute minimal threshold for minimally acceptable comprehension with scaffolding (dictionary lookup, teacher assistance, glosses). Approximately 1 unknown word in every 20 words (5 words per 100).
-- **98% Lexical Coverage**: The threshold required for unassisted, pleasurable, fluent extensive reading and high-accuracy incidental guessing from context. Approximately 1 unknown word in every 50 words (2 words per 100).
-- *Implication for Beginners*: Authentic native novels or technical whitepapers require a vocabulary of 8,000–9,000 word families for 98% coverage. Handing authentic, unsimplified text to an A0/A1 learner (lexical coverage < 70%) causes immediate cognitive overload and complete comprehension breakdown.
+### 2.3 Lexical Coverage: Probabilistic Targets & Boundary Conditions
+Paul Nation's foundational corpus research (2001, 2006, 2013) and Schmitt et al. (2011) demonstrate strong relationships between text lexical coverage and reading comprehension:
+- **~95% Lexical Coverage (Useful Target for Scaffolded Study)**: An approximate coverage level commonly associated with adequate comprehension when supported by glosses, dictionary lookups, or multimodal scaffolding (~1 unfamiliar word per 20 running words).
+- **~98% Lexical Coverage (Target for Fluent Extensive Reading)**: An approximate coverage level where learners can read fluently with minimal interruption, enabling high-accuracy incidental guessing from context (~1 unfamiliar word per 50 running words).
+- **Probabilistic Reality vs. Biological Cliffs**:
+  - These percentages are **useful pedagogical targets**, not universal biological cliffs.
+  - Comprehension is dynamically modulated by boundary conditions: domain schema (e.g., familiar technical concepts), visual and audio scaffolding, textual redundancy, glossing, and the specific comprehension task. A software engineer reading familiar documentation may achieve effective task comprehension at 90–92% coverage due to strong conceptual schema, whereas an unfamiliar literary narrative may require 98%+.
+  - *Pedagogical Guideline*: Strive for high lexical coverage (~95%) as a starting target in assigned reading, adjusting dynamically when rich domain scaffolding or glossing is present.
 
 ---
 

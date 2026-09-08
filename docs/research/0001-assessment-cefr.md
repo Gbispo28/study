@@ -24,14 +24,16 @@ The CEFR was comprehensively updated in the *Common European Framework of Refere
    - **Mediation** (Explaining data, translating concepts, facilitating collaboration)
 2. **De-emphasis of native-speaker norms**:
    - Phonological control descriptors were completely rewritten in 2020. The target is explicitly defined as **intelligibility**, **articulatory clarity**, and **prosodic control**, rather than accent extinction or resemblance to an idealized native speaker.
-3. **Pre-A1 and the Full Scale (Pre-A1 to C2)**:
-   - The Companion Volume formally established descriptors for **Pre-A1**, defining the baseline threshold where a learner can recognize isolated familiar words, recognize simple numbers, and produce single-word greetings.
-   - The framework extends seamlessly through **A1, A2, B1, B2, C1, and C2**. An assessment instrument must not impose an artificial ceiling at B2; if a learner demonstrates advanced reading comprehension in technical domains, the system must recognize C1/C2 descriptors while diagnosing lower levels in spoken interaction.
+3. **Full Scale Descriptors vs. Custom Instrument Measurement Ceiling**:
+   - The Companion Volume establishes descriptors across the entire continuum: **Pre-A1, A1, A2, B1, B2, C1, and C2**.
+   - However, an assessment instrument's operational measurement range depends strictly on item sampling depth. A compact diagnostic battery (~60 min) cannot defensibly discriminate higher-tier proficiencies (C1 vs C2) without extensive multi-genre reading, complex discursive listening, and varied oral interviews.
+   - **Canonical Instrument Boundary**: The internal diagnostic battery operates with an **explicit measurement ceiling at B2**. When performance approaches or exceeds this ceiling, the system outputs `ABOVE CURRENT INSTRUMENT CEILING — EXTERNAL/EXTENDED ASSESSMENT REQUIRED`. It never infers C1 or C2 from single isolated advanced items.
 
-### 2.2 Adaptive Routing & Early Stopping Principles
-To evaluate across a broad range without exhausting a beginner learner with impenetrable C2 texts:
-- **Adaptive Routing**: Begin assessment with A1/A2 core routing tasks. If accuracy exceeds 85%, route to B1/B2 tasks; if B2 is mastered, route to C1/C2 tasks.
-- **Early Stopping**: If a learner fails consecutive items at a lower tier (e.g., $<40\%$ on A1 listening), immediately stop testing that dimension to prevent cognitive distress and invalid guessing.
+### 2.2 Formative Routing & Measurement Ceiling Policy
+To profile beginner-to-intermediate learners without inducing test fatigue:
+- **Core Formative Routing**: The battery evaluates Pre-A1, A1, A2, and intermediate B1/B2 competencies, locating the learner's specific communicative bottlenecks.
+- **Adaptive Early Stopping**: If an adult beginner demonstrates severe failure on initial core items ($<40\%$ on A1 listening), testing in that dimension terminates immediately to prevent cognitive distress and invalid guessing.
+- **Ceiling Reporting**: Learners demonstrating near-perfect performance across core and extension items are flagged as exceeding the custom battery's measurement range, with high-level evaluation deferred to certified external instruments (e.g., Cambridge, IELTS).
 
 ---
 
@@ -39,33 +41,34 @@ To evaluate across a broad range without exhausting a beginner learner with impe
 
 To maintain strict scientific integrity, we explicitly distinguish between **Official CEFR Companion Volume Scales** and **Custom English Learning OS Diagnostic Dimensions**:
 
-| Custom Diagnostic Dimension | Mapped Official CEFR Scale (Council of Europe 2020) | Scope & Measurement Modality |
-| :--- | :--- | :--- |
-| **Acoustic Listening** | Overall Listening Comprehension; Understanding Conversation | Audio playback without text; speed/reduction tolerance (Pre-A1 to C2). |
-| **Text Reading** | Overall Reading Comprehension; Reading for Information | Silent reading; comprehension & inferencing items (Pre-A1 to C2). |
-| **Spoken Monologue Production** | Sustained Monologue (Describing Experience / Putting a Case) | Elicited oral summary / recorded technical explanation (Pre-A1 to C2). |
-| **Spoken Interactive Turn-Taking** | Overall Spoken Interaction; Goal-Oriented Cooperation | Real-time conversational dialogue with AI partner (Pre-A1 to C2). |
-| **Written Composition** | Overall Written Production; Creative & Functional Writing | Prompted composition; sentence combining and issue synthesis (Pre-A1 to C2). |
-| **Phonological Control** | Phonological Control (Sound Articulation, Prosody, Intelligibility) | Minimal pair perception + acoustic production analysis (Pre-A1 to C2). |
-| **Operational Grammar** | *Custom Dimension* (Informed by English Grammar Profile & General Linguistic Range) | Functional sentence frames in use; syntactic complexity (Pre-A1 to C2). |
-| **Receptive Vocabulary Breadth** | *Custom Dimension* (Informed by English Vocabulary Profile & Vocabulary Range) | Estimated lemma size sampled across frequency bands (K1–K5+). |
-| **Productive Vocabulary Recall** | *Custom Dimension* (Informed by Vocabulary Control) | Elicited lexical production in communicative context. |
+| Custom Diagnostic Dimension | Mapped Official CEFR Scale (Council of Europe 2020) | Scope & Measurement Modality | Instrument Measurement Range |
+| :--- | :--- | :--- | :---: |
+| **Acoustic Listening** | Overall Listening Comprehension; Understanding Conversation | Audio playback without text; speed/reduction tolerance. | Pre-A1 to B2 (Ceiling at B2) |
+| **Text Reading** | Overall Reading Comprehension; Reading for Information | Silent reading; comprehension & inferencing items. | Pre-A1 to B2 (Ceiling at B2) |
+| **Spoken Monologue Production** | Sustained Monologue (Describing Experience / Putting a Case) | Elicited oral summary / recorded technical explanation. | Pre-A1 to B2 (Ceiling at B2) |
+| **Spoken Interactive Turn-Taking** | Overall Spoken Interaction; Goal-Oriented Cooperation | Real-time conversational dialogue with AI partner. | Pre-A1 to B2 (Ceiling at B2) |
+| **Written Composition** | Overall Written Production; Creative & Functional Writing | Prompted composition; sentence combining and issue synthesis. | Pre-A1 to B2 (Ceiling at B2) |
+| **Phonological Control** | Phonological Control (Sound Articulation, Prosody, Intelligibility) | Minimal pair perception + acoustic production analysis. | Pre-A1 to B2 (Ceiling at B2) |
+| **Operational Grammar** | *Custom Dimension* (Informed by English Grammar Profile) | Functional sentence frames in use; syntactic complexity. | Pre-A1 to B2 (Ceiling at B2) |
+| **Receptive Lexical Familiarity** | *Custom Dimension* (Informed by English Vocabulary Profile) | Categorical band familiarity (K1, K2, K3 bands). | Foundational to Intermediate |
+| **Productive Lexical Recall** | *Custom Dimension* (Informed by Vocabulary Control) | Elicited lexical production in communicative context. | Pre-A1 to B2 (Ceiling at B2) |
 
 ---
 
 ## 4. Crucial Regulatory & Psychometric Disclaimers
 
 1. **Non-Certified Diagnostic Tool**: The English Learning OS Diagnostic Pack is an **internal pedagogical placement and progress-profiling instrument**. It is **NOT an officially accredited, certified, or endorsed Council of Europe examination** (such as Cambridge English, IELTS, or TOEFL). It provides formative diagnostic information to guide daily study allocations, not legal or academic certification.
-2. **Copyright Protection of Original Frameworks**: The CEFR Companion Volume descriptors, English Profile research, and academic Vocabulary Levels Tests (VLT) are referenced with scholarly attribution. All specific test prompts and assessment items in `docs/assessment/` are custom-authored for the English Learning OS and must not be treated as standardized psychometric products.
+2. **Explicit Rejection of Pseudo-Precision**: Scoring rejects arbitrary raw-score tables, fictitious statistical confidence intervals, and continuous vocabulary size extrapolations from small item sets. Proficiency is assessed against qualitative behavioral descriptors.
+3. **Copyright Protection of Original Frameworks**: The CEFR Companion Volume descriptors, English Profile research, and academic Vocabulary Levels Tests (VLT) are referenced with scholarly attribution. All specific test prompts and assessment items in `docs/assessment/` are custom-authored for the English Learning OS.
 
 ---
 
 ## 5. Architectural Implications for English Learning OS
 
-1. **Multi-Dimensional State Vector Across Pre-A1 to C2**:
+1. **Multi-Dimensional State Vector with B2 Ceiling**:
    $$\vec{P} = \langle L, R, SP, SI, W, PC, GC, VR, VP \rangle$$
-   Each dimension can range from `Pre-A1` to `C2`, with explicit `Confidence Ratings` (`High`, `Medium`, `Low`) based on evidence sufficiency.
-2. **Decoupled Curriculum Routing**: If a learner is B2 in Reading but A1 in Spoken Interaction, the system delivers B2 technical reading materials while delivering A1 scaffolded oral production drills.
+   Each dimension is assigned a qualitative band from `Pre-A1` to `B2` (or `> B2 Ceiling`), accompanied by an explicit non-parametric `Confidence Rating` (`High`, `Medium`, `Low`).
+2. **Decoupled Curriculum Routing**: If a learner is B2 in Reading but A1 in Spoken Interaction, the system delivers B2 reading materials while delivering A1 scaffolded oral production drills.
 
 ---
 
