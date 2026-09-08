@@ -1,0 +1,4 @@
+{
+  "$comment": "Antigravity Model Context Protocol (MCP) server configuration. Per engineering governance, servers requiring secrets (such as GitHub PAT) are kept deferred/disabled here to prevent credential leakage and non-functional literal interpolations. Configure them locally in ~/.gemini/config/mcp_config.json or via official UI.",
+  "mcpServers": {}
+}
