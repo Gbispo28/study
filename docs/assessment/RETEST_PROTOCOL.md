@@ -1,39 +1,46 @@
 # Retesting & Longitudinal Tracking Protocol: English Learning OS
 
-> **Core Principle**: *Never mistake test familiarity for language acquisition. Separate daily leading indicators from periodic lagging outcomes.*
+> **Core Tenet**: *Never mistake test familiarity for language acquisition. Derive retesting frequency from psycholinguistic evidence, measurement noise limits, and conservative operational judgment.*
 
 ---
 
-## 1. Practice Effects & Retest Intervals
+## 1. Empirical Foundations of Retest Scheduling
 
-### 1.1 The Threat of Test-Retest Practice Effects
-In SLA and psychometrics, administering identical assessment instruments at close intervals (e.g., weekly or bi-weekly) severely corrupts measurement validity (Alderson, 2005):
-- Learners memorize specific test prompts, question options, and sentence answers.
-- Score inflation reflects test-wiseness and episodic memory rather than generalized linguistic proficiency.
-- Practice effects create a dangerous illusion of accelerated progress.
+### 1.1 The Threat of Practice Effects & Item Memorization
+In psycholinguistic assessment, administering test items at close intervals (e.g., weekly or bi-weekly) severely corrupts measurement validity (Alderson, 2005; Hausknecht et al., 2007):
+- **Episodic Recall**: Learners recall specific test sentences, audio scenarios, and multiple-choice options rather than demonstrating generalized communicative gains.
+- **Score Inflation**: Test-retest score gains in short intervals largely reflect test-wiseness and reduced anxiety, not authentic second language development.
+- **Measurement Noise**: Daily or weekly language fluctuations (sleep, work stress, emotional state) produce noise that overwhelms true linguistic growth.
 
-### 1.2 Scientifically Defensible Retest Schedule
+### 1.2 Rate of L2 Acquisition in Working Adults
+Empirical SLA research (Cambridge English Language Assessment, 2018; North, 2014) indicates that progressing through one full CEFR band (e.g., A1 to A2) requires approximately **150 to 200 guided learning hours**.
+- For an adult studying **1 hour per day**, moving one full CEFR sub-band (e.g., A1 to A2-low) requires approximately **60 to 90 days** of consistent practice.
+- Testing formal CEFR outcomes every 2 weeks produces zero statistically observable gains while inducing testing fatigue.
 
-| Assessment Type | Frequency / Interval | Purpose | Evaluation Items |
+### 1.3 Operational Consensus vs. Scientific Bounds
+Where empirical literature does not dictate an exact calendar frequency, the English Learning OS adopts **conservative operational intervals**:
+
+| Assessment Layer | Derived Frequency | Scientific & Operational Rationale | Evaluation Modality |
 | :--- | :--- | :--- | :--- |
-| **Micro-Diagnostic Check** | Weekly (End of Week) | Formative check on target skills learned during the week. | Alternate-form sentence combining (3 items), 4-item acoustic dictation. |
-| **Vocabulary Progress Check** | Monthly (Every 30 Days) | Measure receptive lemma expansion and retention stability. | 30-item sampled Vocabulary Levels Test (VLT K1–K3) drawn from unseen item bank. |
-| **Major Milestone Retest** | **Quarterly (Every 90 Days)** | Comprehensive re-evaluation of the full multi-dimensional vector $\vec{P}$. | Complete alternate form of [BASELINE_PROTOCOL.md](./BASELINE_PROTOCOL.md) (Form B / Form C). |
+| **Daily Activity Tracking** | Continuous (Daily) | Zero testing overhead; tracks habit adherence and retrieval success without test fatigue. | Leading Indicators: FSRS review clearance, true retention, audio minutes heard, sentences spoken. |
+| **Weekly Formative Micro-Check** | Weekly (Day 6, ~10 min) | Sensitive to short-term instructional uptake without testing broad CEFR bands. | 3-item sentence combining check, 4-item micro-dictation drawn from the week's study content. |
+| **Monthly Lexical Check** | Every 30 Days (~10 min) | Detects receptive lemma growth ($V_{\text{est}}$), which moves faster than complex communicative grammar. | 30-item sampled Vocabulary Levels Test from unseen frequency pools. |
+| **Quarterly Formal Reassessment** | **Every 90 Days (~60 min)** | *Conservative Operational Decision*: Matches the 90-hour developmental threshold required for observable CEFR vector shifts. | Full alternate-form battery ([BASELINE_PROTOCOL.md](./BASELINE_PROTOCOL.md) Form B / Form C). |
 
 ---
 
 ## 2. Leading vs. Lagging Indicators
 
-A fatal flaw in commercial language apps is tracking trivial activity metrics (e.g., daily streaks, XP points, badges) and presenting them as proxies for fluency. The English Learning OS explicitly separates **Leading Indicators** from **Lagging Outcomes**:
+To prevent confusing activity streaks with language mastery:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        MEASUREMENT ARCHITECTURE                        │
 ├───────────────────────────────────┬────────────────────────────────────┤
 │        LEADING INDICATORS         │          LAGGING OUTCOMES          │
-│    (What the learner controls)    │      (What the system measures)    │
+│    (Daily Study Behaviors)        │     (Periodic Measured Mastery)    │
 ├───────────────────────────────────┼────────────────────────────────────┤
-│ • Study Adherence (Days/week = 60m)│ • CEFR Multi-Dimensional Bands    │
+│ • Study Adherence (Days/week = 60m)│ • CEFR Profile Vector Shift (P)   │
 │ • SRS Reviews Completed Daily     │ • Receptive Lexical Breadth (Lemmas│
 │ • FSRS True Retention Rate (%)    │ • Spoken Retrieval Latency (sec)   │
 │ • Minutes of Bimodal Input Heard  │ • Epenthesis Suppression Rate (%)  │
@@ -43,17 +50,16 @@ A fatal flaw in commercial language apps is tracking trivial activity metrics (e
 ```
 
 ### 2.1 Daily & Weekly Leading Indicators
-Tracked automatically during daily sessions:
 1. **Adherence Rate**: Percentage of days achieving the full 60-minute session (Target: $\ge 85\%$, or 6 out of 7 days).
 2. **Review Clearance**: Clearing all due FSRS reviews within the 15-minute timebox.
 3. **True Retention**: Percentage of mature reviews rated "Good" or "Easy" on first pass (Target: $88\% - 92\%$).
-4. **Input Volume**: Running word count of bimodal text read and listened to (Target: $\ge 1,500$ words/week at A1; $\ge 4,000$ words/week at A2).
+4. **Bimodal Input Volume**: Running word count of bimodal text read and listened to (Target: $\ge 2,000$ words/week).
 5. **Vocal Output Count**: Number of complete sentences spoken aloud in Block 3 (Target: $\ge 15$ sentences/day).
 
-### 2.2 Monthly & Quarterly Lagging Outcomes
+### 2.2 Quarterly Lagging Outcomes
 Evaluated solely through standardized retests:
 1. **CEFR Vector Progression**: Upward shift in individual dimensions (e.g., $L: \text{A1} \rightarrow \text{A2}$).
-2. **Measured Lemma Growth**: Expansion in confirmed receptive lemmas (e.g., $+250$ lemmas/month).
+2. **Measured Lemma Growth**: Expansion in confirmed receptive lemmas (Target: $+200$ to $+300$ lemmas/quarter).
 3. **Acoustic Parsing Speed**: Ability to comprehend connected speech at natural speed (1.0x) without text scaffolding.
 4. **Articulatory Accuracy**: Absence of epenthesis on word-final consonant clusters in unscripted speech.
 
@@ -62,13 +68,13 @@ Evaluated solely through standardized retests:
 ## 3. Alternate-Form Pool Architecture
 
 To guarantee that 90-day milestone retests measure genuine acquisition:
-1. **Item Pool Triplication**: The system maintains three structurally isomorphic but lexically distinct test batteries:
+1. **Item Pool Triplication**:
    - **Form A**: Initial Baseline Test (administered Day 0).
    - **Form B**: Milestone 1 Retest (administered Day 90).
    - **Form C**: Milestone 2 Retest (administered Day 180).
 2. **Isomorphism Rules**:
    - Audio passages maintain identical word count ($\pm 5\%$), speech rate (wpm), and frequency band distribution.
-   - Minimal pair perception drills test identical phonemic contrasts using different lexical carriers (e.g., Form A: *ship/sheep*; Form B: *fit/feet*; Form C: *chip/cheap*).
+   - Minimal pair drills test identical phonemic contrasts using different lexical carriers (e.g., Form A: *ship/sheep*; Form B: *fit/feet*; Form C: *chip/cheap*).
    - Sentence combining tasks utilize identical grammatical conjunctions (*because, although, after*) with novel situational prompts.
 
 ---
@@ -93,7 +99,7 @@ If a 90-day milestone retest shows zero progression in a specific dimension (e.g
         • Is working memory overwhelmed by cognitive overload?
                               │
                               ▼
-        Step 3: Dynamic Routine Adjustment (Phase 03 Engine)
+        Step 3: Dynamic Routine Adjustment (Routine Engine)
         • Double time allocated to the stagnant skill (e.g., shift 10 min
           from passive reading to active speaking drills).
         • Reduce new vocabulary intake to decrease cognitive load.

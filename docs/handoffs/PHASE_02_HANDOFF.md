@@ -1,9 +1,11 @@
-# Session Handoff: Phase 02 — Product Discovery & Learning Science Specification
+# Session Handoff: Phase 02 — Product Discovery & Learning Science Specification (Refined)
 
-> **Session**: Phase 02 Execution & Pedagogical Specification Delivery<br>
+> **Session**: Phase 02 Refined Specification Delivery<br>
 > **Timestamp**: 2026-09-08<br>
 > **Branch**: `main`<br>
 > **Gate 2 Decision**: `GATE 2: BLOCKED ON LEARNER BASELINE`<br>
+> **Phase 02 Status**: **OPEN / IN PROGRESS** (Specification Delivered — Gated on Learner Baseline Administration)<br>
+> **Phase 03 Status**: **LOCKED** (Pending Learner Baseline Assessment)<br>
 > **Starting HEAD**: `4b0e1090f1c730ab4e6727e8d0dd0c712d8f581b`<br>
 > **Current HEAD**: Resolve dynamically at runtime with `git rev-parse HEAD`
 
@@ -11,39 +13,45 @@
 
 ## 1. Accomplished in This Session
 
-1. **Cognitive & SLA Research Suite (`docs/research/`)**:
-   - Authored [EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md) containing 16 peer-reviewed claims graded across the 8-tier epistemic hierarchy, complete with citations, DOIs, conflicting evidence analysis, and architectural implications.
-   - Audited all initial repository hypotheses (HYP-01 to HYP-04) adversarially:
-     - HYP-01: Claim of "2x retention" unsupported by vocabulary literature; revised to lean cards for top 500 lemmas and contextual cloze for polysemy/syntax.
-     - HYP-02: Target of 85% desired retention unvalidated for beginners; revised to 90% initial default to prevent lapse churn.
-     - HYP-03: Claim of 4-week fossilization prevention unsupported; revised to continuous contrastive phonological training.
-     - HYP-04: AI conversational scaffolding supported for anxiety reduction with explicit task boundaries.
-   - Authored 10 comprehensive research notes (`0001` through `0010`) covering CEFR 2020, Memory Architecture, Lexical Frequency/Coverage, Receptive Skills, Spoken Production & Feedback, Brazilian Portuguese Contrastive Phonetics, Writing & Grammar, Anki/FSRS Mathematics, AI Tools/Resources, and the 60-Minute Allocation Model.
-2. **Diagnostic & Assessment Pack (`docs/assessment/`)**:
-   - Authored [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md): Standardized 7-part diagnostic test battery (Listening, Reading, Speaking, Pronunciation, Writing, Grammar, Vocabulary) rejecting the flat A0/A1 assumption.
-   - Authored [CEFR_RUBRIC.md](../assessment/CEFR_RUBRIC.md): Standardized qualitative rubrics mapping Pre-A1 through B2 grounded in the Council of Europe CEFR Companion Volume (2020).
-   - Authored [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md): High-information questionnaire capturing unknown operational variables.
-   - Authored [SCORING_MODEL.md](../assessment/SCORING_MODEL.md): Deterministic scoring algorithms, 9-dimensional state vector $\vec{P}$, confidence ratings, and bottleneck detection.
-   - Authored [RETEST_PROTOCOL.md](../assessment/RETEST_PROTOCOL.md): 90-day alternate-form retest schedule, leading vs. lagging indicators.
-3. **Core Product Invariants & Specification (`docs/product/`)**:
-   - Authored [LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md): Canonical pedagogical contract (operational invariants).
-   - Authored [LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md): Master 18-section pedagogical specification artifact synthesizing all models.
-   - Updated [REQUIREMENTS.md](../product/REQUIREMENTS.md) reflecting audited hypotheses and newly confirmed requirements.
-4. **Living Context Updates (`docs/project/`)**:
-   - Updated `STATE.md`, `ROADMAP.md`, and `BACKLOG.md` reflecting Phase 02 completion and Phase 03 readiness.
+1. **Incorporated All 12 Mandatory Governance Refinements**:
+   - Reframed all preliminary assumptions as `CANDIDATE CLAIMS / RESEARCH LEADS` subjected to adversarial empirical testing.
+   - Updated tool capability audit to current official **September 2026** landscape: Google AI Pro (R$ 96,99/mês in Brazil with Gemini 3.1 Pro, Antigravity rate limits, Workspace integration, Deep Research, 5TB storage, Gemini Live on S24 Ultra, NotebookLM Audio Overview) and Claude Code Pro (terminal-based engineering/content CLI).
+   - Expanded CEFR rubrics and assessment routing across the full continuum (**Pre-A1 to C2**), strictly differentiating official CEFR scales from custom English Learning OS diagnostic dimensions.
+   - Eliminated false psychometrics; adopted non-parametric `Confidence Ratings` (`High`, `Medium`, `Low`), `Uncertainty Categories`, and `Boundary Bands` (`A2-high / B1-low`).
+   - Added explicit disclaimers: Not an accredited CEFR examination; all items are custom unstandardized diagnostic items.
+   - Protected original copyrighted instruments (Nation's VLT, Cambridge EVP/EGP, CEFR Companion Volume).
+   - Removed FSRS version locks; aligned with native Anki FSRS defaults (90% retention), CMRR diagnostic guidance, and rapid/nonlinear workload scaling.
+   - Derived retesting schedules from research on practice effects, measurement noise, and expected adult L2 acquisition rates (~90 study hours per sub-band).
+   - Reframed BP $\rightarrow$ GAE phonetics as candidate difficulties modulated by regional BP dialect variation and continuous acoustic rhythm metrics (nPVI).
+   - Structured the 60-minute model around operational rules, cognitive load boundaries, and workload throttling rather than fake mathematical formulas.
+   - Enforced strict document governance: Phase 02 remains open, Phase 03 remains locked, and `STATE.md`, `ROADMAP.md`, and `BACKLOG.md` reflect the exact baseline blocker.
+2. **Cognitive & SLA Research Suite (`docs/research/`)**:
+   - [EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md): 16 peer-reviewed claims with 8-tier epistemic grading and hypothesis audits (HYP-01 to HYP-04).
+   - 10 Research Notes (`0001` to `0010` in `docs/research/`).
+3. **Diagnostic & Assessment Pack (`docs/assessment/`)**:
+   - [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md): 7-part standardized test battery with adaptive routing to C1/C2.
+   - [CEFR_RUBRIC.md](../assessment/CEFR_RUBRIC.md): Pre-A1 through C2 qualitative rubrics.
+   - [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md): High-information questionnaire for unknown variables.
+   - [SCORING_MODEL.md](../assessment/SCORING_MODEL.md): Deterministic state vector $\vec{P}$ and bottleneck detector.
+   - [RETEST_PROTOCOL.md](../assessment/RETEST_PROTOCOL.md): 90-day alternate-form retest schedule.
+4. **Core Specifications (`docs/product/`)**:
+   - [LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md): Canonical pedagogical contract.
+   - [LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md): Master 18-section pedagogical specification.
+   - [REQUIREMENTS.md](../product/REQUIREMENTS.md): Audited hypotheses and confirmed requirements.
 
 ---
 
 ## 2. Active Decisions & Governance Status
 
-- **Stack Selection**: Remains strictly deferred to Phase 04 via ADR-0000. Zero production code, frameworks, or database schemas introduced.
+- **Stack Selection**: Strictly deferred to Phase 04 via ADR-0000. Zero production code written.
 - **Pedagogical Invariants**: Fully operationalized in `LEARNING_PRINCIPLES.md`.
-- **FSRS Configuration**: Set to $R = 0.90$, steps `10m`, max interval `365d`, 4-lapse leech policy.
-- **Gate 2 Verdict**: Declared as `GATE 2: BLOCKED ON LEARNER BASELINE`. The specification is 100% complete; dependent personal routine weights await user test answers.
+- **FSRS Configuration**: Set to native Anki FSRS, $R = 0.90$, steps `10m`, max interval `365d`, 4-lapse leech policy.
+- **Gate 2 Verdict**: Declared as `GATE 2: BLOCKED ON LEARNER BASELINE`. Phase 02 remains open; Phase 03 is locked until baseline data is submitted.
 
 ---
 
-## 3. Required Next Actions (Phase 03 Activation)
+## 3. Required User Action to Unblock Gate 2
 
-1. **User Action**: The learner must complete [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md) and execute the test battery in [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md).
-2. **Phase 03 Initiation**: Ingest the completed baseline diagnostic results, compute vector $\vec{P}$, and formulate the Phase 03 card architecture and device handoff protocols.
+1. Fill out [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md).
+2. Complete and record responses to [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md).
+3. Once submitted, the system will score vector $\vec{P}$, detect the primary cognitive bottleneck, close Gate 2, and unlock Phase 03.

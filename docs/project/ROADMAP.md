@@ -5,9 +5,9 @@
 ```
 Phase 01: Foundation & Governance (COMPLETE — Gate 1 Passed)
    ↓
-Phase 02: Product Discovery & SLA Specification (COMPLETE — Gate 2: Blocked on Learner Baseline)
+Phase 02: Product Discovery & SLA Specification (IN PROGRESS — Gate 2: Blocked on Learner Baseline)
    ↓
-Phase 03: Daily Journey & Card Architecture (READY PENDING BASELINE)
+Phase 03: Daily Journey & Card Architecture (LOCKED — Pending Learner Baseline)
    ↓
 Phase 04: Architecture & Stack Decision (ADRs)
    ↓
@@ -33,20 +33,21 @@ Phase 08: Multi-Device Automation & Hardening
 
 ---
 
-## Phase 02: Product Discovery & SLA Specification (Status: COMPLETE | Gate 2: BLOCKED ON LEARNER BASELINE)
+## Phase 02: Product Discovery & SLA Specification (Status: IN PROGRESS | Gate 2: BLOCKED ON LEARNER BASELINE)
 - [x] Standardized 7-part diagnostic test battery and scoring model ([docs/assessment/](../assessment/README.md)).
-- [x] Master evidence matrix with 16 graded claims and 4 hypothesis audits ([docs/research/EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md)).
-- [x] 10 peer-reviewed research notes covering SLA, memory, vocabulary, input, output, phonetics, grammar, and tools ([docs/research/](../research/README.md)).
-- [x] Contrastive phonological priority matrix: Brazilian Portuguese to General American English.
-- [x] Mathematical 60-minute routine allocation model (3-block modular architecture + dynamic engine).
-- [x] FSRS-5 scheduling configuration and card taxonomy (4 note types).
+- [x] Master evidence matrix with 16 graded candidate claims and 4 hypothesis audits ([docs/research/EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md)).
+- [x] 10 peer-reviewed research notes covering SLA, memory, vocabulary, input, output, phonetics, grammar, and 2026 tools ([docs/research/](../research/README.md)).
+- [x] Candidate contrastive phonological priority matrix: Brazilian Portuguese to General American English.
+- [x] Operational 60-minute routine allocation policy (3-block modular architecture + priority engine).
+- [x] Native Anki FSRS configuration and card taxonomy (4 note types).
 - [x] Canonical pedagogical invariants ([LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md)).
 - [x] Master system specification ([LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md)).
+- [ ] **Gating Dependency**: Ingest completed learner baseline intake and diagnostic performance to compute vector $\vec{P}$ and close Gate 2.
 
 ---
 
-## Phase 03: Daily Journey & Card Architecture (Status: Ready Pending Baseline)
-- [ ] Ingest completed baseline diagnostic results and initialize state vector $\vec{P}$.
+## Phase 03: Daily Journey & Card Architecture (Status: LOCKED — Pending Learner Baseline)
+- [ ] Unlocked only upon formal closure of Gate 2 with real learner baseline data.
 - [ ] Detailed daily protocol and device transitions (Galaxy S24 Ultra morning $\rightarrow$ MacBook Air evening).
 - [ ] Implementation of Anki note type templates (fields, CSS, mobile touch targets, cloze styling).
 - [ ] FSRS configuration profile setup in Anki Desktop.

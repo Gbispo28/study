@@ -4,9 +4,9 @@
 
 ---
 
-## 1. Evidence Before Method (Epistemic Primacy)
+## 1. Evidence Before Method (Epistemic Primacy & Adversarial Research)
 - **No Scientific Intuition**: No pedagogical method, routine structure, or software algorithm may be introduced based solely on popular advice, intuition, marketing claims, or unproven traditions.
-- **Empirical Justification**: Every material learning mechanism must trace directly to peer-reviewed SLA or cognitive science literature recorded in [EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md).
+- **Candidate Claims & Adversarial Verification**: All preliminary assumptions and hypotheses must be treated as `CANDIDATE CLAIMS / RESEARCH LEADS` and audited adversarially against empirical literature and conflicting findings recorded in [EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md).
 - **Epistemic Honesty**: Always distinguish established consensus from working hypotheses. When empirical evidence is conflicting or absent, label the feature as experimental and define explicit falsification criteria.
 
 ---
@@ -20,7 +20,7 @@
 
 ## 3. Distributed Spacing & Dynamic Stability (Anti-Cramming)
 - **Zero Massed Cramming**: The system strictly rejects weekend binge-studying or cram sessions designed to "catch up" on missed weekdays.
-- **Dynamic Interval Expansion**: All lexical items, phonological minimal pairs, and syntactic frames must be managed under dynamic spaced repetition (FSRS). Review intervals must expand based on verified recall history and memory stability, not arbitrary fixed calendar steps.
+- **Dynamic Interval Expansion**: All lexical items, phonological minimal pairs, and syntactic frames must be managed under dynamic spaced repetition (native Anki FSRS). Review intervals must expand based on verified recall history and memory stability, not arbitrary fixed calendar steps.
 - **Time-Capped Review**: Spaced repetition is a memory maintenance tool, not the totality of language learning. Daily SRS review time must be mathematically capped at 15–20 minutes to prevent crowding out rich communicative input and output.
 
 ---
@@ -47,28 +47,29 @@
 
 ## 7. Intelligibility Over Native Accent Eradication
 - **The Intelligibility Standard**: In accordance with modern phonetic science and CEFR 2020 guidelines, the objective of pronunciation training is **functional comprehensibility and high international intelligibility**, not the elimination of a non-native accent.
-- **High-Impact Contrastive Targeting**: Articulatory drills must focus ruthlessly on phonological phenomena that destroy comprehension for Brazilian Portuguese speakers:
+- **Candidate Contrastive Targeting**: Articulatory drills must investigate and target candidate phonological phenomena that destroy comprehension for Brazilian Portuguese speakers, accounting for regional dialect variation:
   1. Suppressing vowel epenthesis on word-final consonant stops (*stop*, *big*, *not*).
   2. Accurate placement of primary word stress and vowel reduction to schwa (/ə/).
-  3. Distinguishing high-frequency vowel mergers (/i/ vs /ɪ/, /æ/ vs /ɛ/).
+  3. Distinguishing high-frequency vowel contrasts (/i/ vs /ɪ/, /æ/ vs /ɛ/).
   4. Closing nasal consonants (/m, n/) at word codas.
 
 ---
 
-## 8. Inviolable 60-Minute Daily Ceiling (Cognitive Budgeting)
+## 8. Inviolable 60-Minute Daily Ceiling (Policy Before Mathematics)
 - **Hard Daily Timebox**: Deliberate daily study is strictly capped at **60 focused minutes**. Exceeding this boundary induces cognitive fatigue, diminishes returns, and risks habit abandonment.
 - **Core vs. Ambient Separation**: The system must remain fully functional and achieve its learning milestones if ambient/passive exposure is exactly zero. Optional ambient exposure (podcasts, entertainment) must never be counted toward the 60-minute core commitment.
-- **Anti-Overload Throttling**: If daily SRS reviews consistently exceed 15–20 minutes, the system must automatically throttle new card introductions to zero until the review queue stabilizes.
+- **Workload Throttling Rule**: If daily SRS reviews exceed 15 minutes, the system must automatically set new card introductions to zero until the review queue stabilizes.
 
 ---
 
-## 9. Multi-Dimensional Competence & Individualized Bottlenecks
-- **No Flattened Proficiency**: The learner's proficiency is an asynchronous multi-dimensional vector $\vec{P}$, never a single scalar. A learner may be B1 in technical reading while Pre-A1 in spontaneous oral production.
-- **Target the Bottleneck**: Study routines must dynamically prioritize the learner's current primary communicative bottleneck (e.g., if acoustic parsing is lagging reading comprehension, input time shifts to bottom-up acoustic decoding).
+## 9. Multi-Dimensional Competence & Uncapped CEFR Range
+- **No Flattened Proficiency**: The learner's proficiency is an asynchronous multi-dimensional vector $\vec{P}$ spanning **Pre-A1 through C2**, never a single scalar. A learner may be B2 in technical reading while Pre-A1 in spontaneous oral production.
+- **Target the Bottleneck**: Study routines must dynamically prioritize the learner's current primary communicative bottleneck.
+- **No False Psychometrics**: Rejects fake statistical confidence intervals. Reports qualitative confidence ratings and boundary bands (`A2-high / B1-low`).
 
 ---
 
 ## 10. Learner Autonomy & Sustainable Habit Compounding
 - **Explainable Pedagogy**: The learner should always understand *why* a specific exercise is assigned and what cognitive mechanism it exercises.
-- **Frictionless Daily Journey**: Transitioning from Desktop (MacBook Air) to Mobile (Galaxy S24 Ultra) must be instantaneous and zero-friction.
+- **Frictionless Daily Journey**: Transitioning from Desktop (MacBook Air M4) to Mobile (Galaxy S24 Ultra) must be instantaneous and zero-friction.
 - **Compounding Over Heroism**: Consistent, focused 60-minute daily execution over 300 days compounds into profound functional fluency; sporadic 4-hour bursts lead to burnout and regression.

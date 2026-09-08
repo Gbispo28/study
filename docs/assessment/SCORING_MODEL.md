@@ -1,12 +1,33 @@
 # Deterministic Scoring Model: English Learning OS
 
-> **Core Tenet**: *Scoring must be reproducible, explainable, and free of hidden AI "gut feelings". Uncertainty must be modeled explicitly.*
+> **Core Tenet**: *Scoring must be reproducible, explainable, and free of hidden AI "gut feelings". False psychometrics (e.g., fictitious statistical confidence intervals) are strictly prohibited.*
 
 ---
 
-## 1. Mathematical Architecture: The Multi-Dimensional Profile Vector
+## 1. Mathematical & Architectural Philosophy
 
-The learner's proficiency is modeled as a 9-dimensional state vector $\vec{P}$:
+### 1.1 Rejection of False Psychometrics
+In educational testing, constructing statistical "confidence intervals" (e.g., $95\% \text{ CI} = [1.32, 1.68]$) requires:
+1. Large normative calibration cohorts ($N > 1,000$).
+2. Validated Item Response Theory (IRT) difficulty and discrimination parameters ($\alpha, \beta, \gamma$).
+3. Standardized item reliability coefficients (Cronbach's $\alpha$).
+
+Because the English Learning OS uses custom diagnostic items rather than a million-student standardized exam, **generating fake statistical confidence intervals is unscientific**.
+
+### 1.2 Non-Parametric Uncertainty Modeling
+Instead of pseudo-statistical intervals, the system models uncertainty using transparent, explainable categories:
+- **Confidence Rating**:
+  - `High`: Performance is consistent across all items in the battery; no contradictory signals.
+  - `Medium`: Minor variance between items (e.g., passed complex item, missed simpler item) or borderline threshold performance.
+  - `Low`: Extreme item variance, severe test anxiety indicated in intake, or premature early stopping due to fatigue.
+- **Boundary Bands**: Explicit reporting of transition states (e.g., `A2-high / B1-low` instead of a fake decimal score like `CEFR = 2.73`).
+- **Evidence Sufficiency**: Tagged as `Sufficient` (all battery parts completed) or `Partial` (routing stopped early).
+
+---
+
+## 2. The 9-Dimensional State Vector $\vec{P}$
+
+The learner's proficiency is modeled as a vector spanning **Pre-A1 to C2**:
 
 $$\vec{P} = \begin{bmatrix}
 L & \text{(Acoustic Listening Comprehension)} \\
@@ -20,112 +41,102 @@ VR & \text{(Receptive Vocabulary Breadth - Lemmas)} \\
 VP & \text{(Productive Vocabulary Recall - Lemmas)}
 \end{bmatrix}$$
 
-Each dimension $d \in \vec{P}$ is assigned:
-1. **CEFR Band**: One of `Pre-A1`, `A1`, `A1+`, `A2`, `A2+`, `B1`, `B1+`, `B2`.
-2. **Confidence Level**: `High` ($\ge 85\%$ consistency across items), `Medium` (borderline performance or minor item variance), or `Low` (insufficient evidence or erratic responses).
-3. **Primary Cognitive Bottleneck Flag**: Boolean flag identifying the specific dimension that is currently constraining overall communicative competence.
-
 ---
 
-## 2. Objective Task Scoring Models
+## 3. Objective Task Scoring Rules
 
-### 2.1 Receptive Scoring: Listening & Reading
+### 3.1 Receptive Scoring: Listening & Reading
 
 #### Part A: Listening Comprehension
-- **Task A1 (Speed & Reduction Discrimination)**: 3 items, 1.0 point each.
-- **Task A2 (Micro-Dictation / Bottom-Up Segmentation)**: 4 items, 1.0 point each (scored on lexical and functional word accuracy; minor phonetic spelling slips penalized by 0.25).
-- **Total Listening Raw Score ($S_L$)**: Range $[0.0, 7.0]$.
+- Task A1 (Discrimination): 3 items, 1.0 pt each.
+- Task A2 (Micro-Dictation): 4 items, 1.0 pt each.
+- Task A3 (Optional C1/C2 Extension): 2.0 pts.
+- Raw Score ($S_L$): Range $[0.0, 9.0]$.
 
-| Raw Score ($S_L$) | CEFR Classification | Diagnostic Interpretation |
+| Raw Score ($S_L$) | Diagnostic Classification | Uncertainty & Diagnostic Notes |
 | :---: | :---: | :--- |
 | $0.0 \le S_L < 2.0$ | `Pre-A1` | Severe acoustic segmentation barrier; cannot parse connected speech. |
 | $2.0 \le S_L < 3.5$ | `A1` | Recognizes isolated content words; misses functional words and reductions. |
-| $3.5 \le S_L < 4.5$ | `A1+ / A2-low` | Borderline; grasps main ideas if speech is slow, but misses connected speech. |
+| $3.5 \le S_L < 4.5$ | `A2-low` (Boundary: `A1-high / A2-low`) | Borderline; grasps slow speech, but misses natural connected speech. |
 | $4.5 \le S_L < 5.5$ | `A2` | Parses standard clear speech; tolerates moderate speech rates. |
-| $5.5 \le S_L \le 7.0$ | `B1` | Robust bottom-up parsing; handles standard connected speech and technical discourse. |
+| $5.5 \le S_L < 7.0$ | `B1` | Robust bottom-up parsing; handles standard connected speech. |
+| $7.0 \le S_L < 8.0$ | `B2` | Parses fast technical discourse with native reductions. |
+| $8.0 \le S_L \le 9.0$ | `C1 / C2` | Parses complex, fast, idiomatic multi-speaker discourse effortlessly. |
 
 #### Part B: Reading Comprehension
-- **Task B1 (Syntax & Inferencing)**: 3 items, 1.0 point each.
-- **Total Reading Raw Score ($S_R$)**: Range $[0.0, 3.0]$.
+- Task B1 (Core Passage): 3 items, 1.0 pt each.
+- Task B2 (Optional C1/C2 Extension): 2.0 pts.
+- Raw Score ($S_R$): Range $[0.0, 5.0]$.
 
-| Raw Score ($S_R$) | CEFR Classification | Diagnostic Interpretation |
+| Raw Score ($S_R$) | Diagnostic Classification | Uncertainty & Diagnostic Notes |
 | :---: | :---: | :--- |
 | $0.0 \le S_R < 1.0$ | `Pre-A1` | Reads isolated words only; unable to parse 2-sentence narrative. |
-| $1.0 \le S_R < 2.0$ | `A1` | Understands simple isolated clauses; struggles with causal connectors (*instead of*). |
-| $2.0 \le S_R < 2.75$ | `A2` | Comprehends clear sequential workplace narratives and chronological flow. |
-| $2.75 \le S_R \le 3.0$ | `B1` | Full syntactic comprehension and inferencing on workplace texts. |
+| $1.0 \le S_R < 2.0$ | `A1` | Understands simple isolated clauses; struggles with complex connectors. |
+| $2.0 \le S_R < 2.75$ | `A2` | Comprehends clear sequential workplace narratives. |
+| $2.75 \le S_R \le 3.0$ | `B1` | Full syntactic comprehension of standard workplace text. |
+| $3.0 < S_R < 4.0$ | `B2` | Rapidly skims technical documentation without dictionary assistance. |
+| $4.0 \le S_R \le 5.0$ | `C1 / C2` | Parses dense technical and architectural prose effortlessly. |
 
 ---
 
-### 2.2 Productive Scoring: Speaking & Pronunciation
+### 3.2 Productive Scoring: Speaking & Pronunciation
 
 #### Part C: Spoken Production & Interaction
-Scored deterministically across four 5-point rubric criteria from [CEFR_RUBRIC.md](./CEFR_RUBRIC.md):
-1. **Intelligibility & Phonological Clarity** $[1 - 5]$
-2. **Grammatical Accuracy & Sentence Structure** $[1 - 5]$
-3. **Lexical Range & Appropriateness** $[1 - 5]$
-4. **Fluency & Retrieval Latency** $[1 - 5]$
+Evaluated on four 5-point criteria from [CEFR_RUBRIC.md](./CEFR_RUBRIC.md):
+1. Intelligibility & Phonological Clarity $[1 - 5]$
+2. Grammatical Accuracy & Complexity $[1 - 5]$
+3. Lexical Range & Precision $[1 - 5]$
+4. Fluency & Retrieval Latency $[1 - 5]$
 
 $$\text{Composite Spoken Score } S_{SP} = \frac{\sum \text{Criteria}}{4} \quad (\text{Range } [1.0, 5.0])$$
 
-| Composite $S_{SP}$ | CEFR Classification | Behavioral Thresholds |
+| Composite $S_{SP}$ | Diagnostic Band | Behavioral Criteria |
 | :---: | :---: | :--- |
 | $1.0 \le S_{SP} < 1.8$ | `Pre-A1` | Single-word utterances; retrieval pauses $>5$ seconds; no connected syntax. |
 | $1.8 \le S_{SP} < 2.6$ | `A1` | Simple memorized SVO frames; frequent long pauses for retrieval. |
 | $2.6 \le S_{SP} < 3.4$ | `A2` | 3–5 connected sentences; pauses for grammatical planning; intelligible message. |
-| $3.4 \le S_{SP} < 4.2$ | `B1` | Continuous narrative; spontaneous repair; handles routine workplace scenarios. |
-| $4.2 \le S_{SP} \le 5.0$ | `B2` | High fluency; nuanced technical explanation; rare intrusive hesitation. |
+| $3.4 \le S_{SP} < 4.2$ | `B1` | Continuous narrative; spontaneous repair; handles routine standups. |
+| $4.2 \le S_{SP} < 4.8$ | `B2` | High fluency; nuanced technical explanation; rare intrusive hesitation. |
+| $4.8 \le S_{SP} \le 5.0$ | `C1 / C2` | Complete spontaneous fluency, natural idiom, and effortless prosody. |
 
 #### Part D: Pronunciation & Articulatory Mechanics
-- **Task D1 (Perception Minimal Pairs)**: 5 items, 1.0 point each ($[0, 5]$).
-- **Task D2 (Production - Epenthesis, Stress, Nasals)**: 4 target sentences evaluated for BP interference:
-  - Epenthesis on word-final stops: $0.0$ (pervasive), $1.0$ (occasional), $2.0$ (completely suppressed).
-  - Word stress accuracy: $0.0$ (misplaced tonic stress), $1.0$ (correct stress).
-  - Vowel contrast (/i/ vs /ɪ/): $0.0$ (merged), $1.0$ (distinct).
-  - Nasal coda closure (/m, n/): $0.0$ (nasalized vowel only), $1.0$ (complete physical closure).
-- **Total Pronunciation Raw Score ($S_{PC}$)**: $[0.0, 10.0]$.
+- Task D1 (Perception): 5 minimal pair items ($[0, 5]$).
+- Task D2 (Production): 4 candidate interference sentences scored for epenthesis, stress, nasal closure, and vowel quality ($[0, 5]$).
+- Raw Score ($S_{PC}$): Range $[0.0, 10.0]$.
 
 ---
 
-### 2.3 Written Composition & Grammar Scoring
+### 3.3 Written Composition & Lexical Size
 
 #### Part E: Written Composition & Sentence Combining
-- **Task E1 (Sentence Combining)**: 3 items, 1.0 point each ($[0, 3]$). Evaluated on connector placement (*because, after, but/although*) and punctuation.
-- **Task E2 (Functional Workplace Message)**: Scored on Task Completion ($1.0$), Cohesion ($1.0$), and Grammatical Control ($1.0$) ($[0, 3]$).
-- **Total Writing Raw Score ($S_W$)**: Range $[0.0, 6.0]$.
+- Task E1 (Sentence Combining): 3 items ($[0, 3]$).
+- Task E2 (Functional Workplace Message): 3 criteria ($[0, 3]$).
+- Raw Score ($S_W$): Range $[0.0, 6.0]$.
 
-#### Part F: Operational Grammar in Use
-- 4 items testing verb aspect, irregular past, modal verbs, and prepositions ($[0.0, 4.0]$).
-
----
-
-### 2.4 Lexical Size Estimation (Nation's VLT Format)
-
-Part G samples from the K1, K2, and K3 frequency bands (3 items per band = 9 items total):
-
+#### Part G: Lexical Size Sampling (Nation's VLT Format)
+Samples from K1, K2, K3 bands (3 items per band = 9 items):
 $$\text{Estimated Receptive Vocabulary Size } V_{\text{est}} = \sum_{k=1}^{3} \left( \frac{\text{Correct Items}_k}{3} \times 1,000 \right)$$
-
-- If $V_{\text{est}} < 800$ lemmas $\implies$ `Pre-A1 Lexicon`.
-- If $800 \le V_{\text{est}} < 1,500$ lemmas $\implies$ `A1 Lexicon`.
-- If $1,500 \le V_{\text{est}} < 2,500$ lemmas $\implies$ `A2 Lexicon`.
-- If $V_{\text{est}} \ge 2,500$ lemmas $\implies$ `B1 Lexicon`.
+- $V_{\text{est}} < 800$ lemmas $\implies$ `Pre-A1 Lexicon`.
+- $800 \le V_{\text{est}} < 1,500$ lemmas $\implies$ `A1 Lexicon`.
+- $1,500 \le V_{\text{est}} < 2,500$ lemmas $\implies$ `A2 Lexicon`.
+- $V_{\text{est}} \ge 2,500$ lemmas $\implies$ `B1+ Lexicon`.
 
 ---
 
-## 3. Bottleneck Identification Algorithm
+## 4. Bottleneck Detection Engine
 
-To determine what the 60-minute routine allocation engine should prioritize, the scoring model applies the **Weakest Link Theorem**:
+The system applies the **Weakest Link Principle** to determine what the 60-minute routine allocation engine must prioritize:
 
 ```python
 def identify_bottleneck(profile_vector):
-    # Order of communicative dependency:
-    # 1. Phonological Intelligibility (if speech is unintelligible, grammar cannot save it)
-    # 2. Acoustic Listening (if input cannot be parsed, interaction is impossible)
+    # Hierarchy of communicative dependency:
+    # 1. Phonological Intelligibility (epenthesis/stress breakdown blocks understanding)
+    # 2. Receptive Acoustic Listening (inability to parse speech blocks interaction)
     # 3. Core Vocabulary (without K1 lemmas, syntax has no building blocks)
-    # 4. Spoken Production / Fluency
-    # 5. Grammar & Writing
+    # 4. Spoken Production / Fluency Latency
+    # 5. Grammar & Written Composition
 
-    if profile_vector["PC"] <= "A1" and profile_vector["epenthesis_severe"]:
+    if profile_vector["PC"] <= "A1" and profile_vector.get("epenthesis_severe", False):
         return "BOTTLENECK_PHONOLOGICAL_EPENTHESIS"
     elif profile_vector["VR"] < 1000:
         return "BOTTLENECK_CORE_LEXICON_K1"
@@ -139,25 +150,26 @@ def identify_bottleneck(profile_vector):
 
 ---
 
-## 4. Transparency & Explainability Output Format
+## 5. Explainable Diagnostic Profile Card
 
-Every scoring evaluation must output a structured, auditable JSON and Markdown diagnostic card:
+Every scoring session generates an auditable, human-readable profile card:
 
 ```markdown
-### Baseline Diagnostic Report
-- **Learner**: G. Bispo (Primary User)
+### Diagnostic Assessment Summary
+- **Learner**: G. Bispo
 - **Date**: YYYY-MM-DD
-- **Evaluator**: English Learning OS Assessment Engine
+- **Assessment Mode**: Baseline Diagnostic Battery (Forms A/B)
+- **Status**: Formative Diagnostic Profile (Not an accredited CEFR certification)
 
-| Dimension | Raw Score | CEFR Band | Confidence | Diagnostic Notes |
+| Dimension | Raw Score | Diagnostic Band | Confidence Rating | Diagnostic Observation |
 | :--- | :---: | :---: | :---: | :--- |
-| **Acoustic Listening** | 3.0 / 7.0 | A1 | High | Connected speech causes breakdown; misses flapping and reductions. |
-| **Text Reading** | 2.5 / 3.0 | A2 | High | Strong technical parsing; grasps narrative sequence. |
-| **Spoken Production** | 1.5 / 5.0 | Pre-A1 | High | High retrieval latency (>6s); single-word responses. |
-| **Pronunciation** | 4.0 / 10.0 | Pre-A1 | High | Pervasive final epenthesis on stops; vowel contrast /i/-/ɪ/ collapsed. |
+| **Acoustic Listening** | 3.0 / 7.0 | A1 | High | Connected speech causes breakdown; flapping and reductions missed. |
+| **Text Reading** | 2.5 / 3.0 | A2 | High | Strong technical syntax parsing; grasps chronological flow. |
+| **Spoken Production** | 1.5 / 5.0 | Pre-A1 | High | High retrieval latency (>5s); single-word responses. |
+| **Phonological Control**| 4.0 / 10.0 | Pre-A1 | High | Final stop epenthesis marked; vowel contrast /i/-/ɪ/ collapsed. |
 | **Written Composition**| 3.5 / 6.0 | A1+ | Medium | Understands basic connectors; needs irregular verb consolidation. |
-| **Receptive Vocabulary**| 1,600 lemmas| A2 | High | Good K1 mastery; partial K2 knowledge; tech words recognized. |
+| **Receptive Vocabulary**| 1,600 | A2 | High | Good K1 mastery; partial K2 knowledge; tech words recognized. |
 
-- **Primary Cognitive Bottleneck**: `BOTTLENECK_PHONOLOGICAL_EPENTHESIS` + `ACOUSTIC_LISTENING`
-- **Immediate Prescription**: Focus Block 2 on bimodal reading-while-listening; focus Block 3 on stop epenthesis suppression drills.
+- **Primary Cognitive Bottleneck**: `BOTTLENECK_PHONOLOGICAL_EPENTHESIS` + `ACOUSTIC_DECODING`
+- **Dynamic Routine Prescription**: Prioritize bimodal reading-while-listening in Block 2; prioritize stop closure drills in Block 3.
 ```

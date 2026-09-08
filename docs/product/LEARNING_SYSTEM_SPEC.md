@@ -1,8 +1,8 @@
 # Learning System Specification: English Learning OS
 
-> **Document Status**: Canonical Pedagogical Specification Artifact (Phase 02 Synthesis)
+> **Document Status**: Canonical Pedagogical Specification Artifact (Phase 02 Synthesis — Refined)
 > **Target Release**: Foundation for Phase 03 (Daily Journey & Card Architecture)
-> **Engineering Invariant**: This document specifies *how the learning system operates scientifically and mathematically*. It does NOT select software frameworks, backend databases, or cloud infrastructure (deferred to Phase 04 per ADR-0000).
+> **Engineering Invariant**: This document specifies *how the learning system operates scientifically and operationally*. It does NOT select software frameworks, backend databases, or cloud infrastructure (strictly deferred to Phase 04 per ADR-0000).
 
 ---
 
@@ -14,148 +14,132 @@
   - Perceived memory/retention difficulty with isolated rote memorization; high vulnerability to cognitive overload if routines lack explicit structure.
   - Asymmetric exposure: Extensive passive exposure to written English code, error logs, and technical documentation; minimal real-time conversational practice; significant foreign language speaking anxiety (FLA).
 - **Time Commitment**: Exactly **60 focused minutes per day**, 6 to 7 days per week.
-- **Hardware Ecosystem**: MacBook Air M4 (macOS) + Samsung Galaxy S24 Ultra (Android).
+- **Hardware Ecosystem**: MacBook Air M4 (macOS workstation) + Samsung Galaxy S24 Ultra (Android mobile companion).
 
 ---
 
-## 2. Multi-Dimensional Proficiency Model
+## 2. Multi-Dimensional Proficiency Model (Pre-A1 to C2)
 
-The learner's proficiency is mathematically defined as a 9-dimensional vector:
+The learner's proficiency is modeled as an asynchronous 9-dimensional state vector $\vec{P}$ spanning **Pre-A1 through C2**:
 
-$$\vec{P} = \langle L, R, SP, SI, W, PC, GC, VR, VP \rangle$$
+$$\vec{P} = \begin{bmatrix}
+L & \text{(Acoustic Listening Comprehension)} \\
+R & \text{(Text Reading Comprehension)} \\
+SP & \text{(Spoken Monologue Production)} \\
+SI & \text{(Spoken Interactive Turn-Taking)} \\
+W & \text{(Written Composition & Synthesis)} \\
+PC & \text{(Phonological Control & Intelligibility)} \\
+GC & \text{(Operational Grammatical Competence)} \\
+VR & \text{(Receptive Vocabulary Breadth - Lemmas)} \\
+VP & \text{(Productive Vocabulary Recall - Lemmas)}
+\end{bmatrix}$$
 
-- $L \in [\text{Pre-A1}, \text{C2}]$: Acoustic Listening Comprehension (connected speech & reduction parsing).
-- $R \in [\text{Pre-A1}, \text{C2}]$: Text Reading Comprehension (syntax, inferencing, lexical coverage).
-- $SP \in [\text{Pre-A1}, \text{C2}]$: Spoken Monologue Production (fluency, coherence, sustained utterance).
-- $SI \in [\text{Pre-A1}, \text{C2}]$: Spoken Interactive Turn-Taking (conversational agility, latency, repair).
-- $W \in [\text{Pre-A1}, \text{C2}]$: Written Composition (sentence combining, cohesive workplace messaging).
-- $PC \in [\text{Pre-A1}, \text{C2}]$: Phonological Control & Intelligibility (prosody, stress, epenthesis suppression).
-- $GC \in [\text{Pre-A1}, \text{C2}]$: Operational Grammatical Competence (functional sentence frames in use).
-- $VR \in \mathbb{N}$: Receptive Vocabulary Breadth (number of recognized lemmas, sampled via VLT).
-- $VP \in \mathbb{N}$: Productive Vocabulary Recall (number of spontaneously retrievable lemmas).
-
-Each dimension is independently evaluated and tagged with an explicit confidence score (`Low`, `Medium`, `High`).
+- **Distinction of Dimensions**: Official CEFR scales (Listening, Reading, Spoken Production, Spoken Interaction, Written Production, Phonological Control) are strictly distinguished from internal diagnostic dimensions (Operational Grammar, Receptive Vocabulary Breadth, Productive Vocabulary Recall).
+- **Non-Parametric Uncertainty Modeling**: Each dimension is reported with qualitative `Confidence Ratings` (`High`, `Medium`, `Low`), `Evidence Sufficiency`, and `Boundary Bands` (`A2-high / B1-low`). Fake statistical confidence intervals are rejected.
 
 ---
 
 ## 3. Epistemic Evidence Model
 
-All curriculum choices, scheduling parameters, and feedback mechanisms adhere to the 8-tier epistemic grading standard defined in [EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md):
-- `ESTABLISHED`: Replicated meta-analyses and cognitive laws (Retrieval Practice, Spacing Effect, Zipf's Law, Intelligibility Principle).
-- `STRONG EVIDENCE`: Peer-reviewed controlled trials (Lexical Coverage $\ge 95\%$, Focus on Form, Sentence Combining, Bimodal Input, FSRS efficiency).
-- `MODERATE EVIDENCE`: Validated primary studies with boundary conditions (High-Variability Phonetic Training, AI speaking scaffolding).
-- `EXPERT CONSENSUS`: Authoritative institutional frameworks (CEFR Companion Volume 2020, English Profile EVP/EGP).
-- `PLAUSIBLE / HYPOTHESIS`: Theoretical models awaiting empirical validation.
-- `UNSUPPORTED`: Disproven myths (isolated word lists produce 2x retention; 4-week drills permanently prevent fossilization; unassisted 70% coverage input works for beginners).
+All curricular decisions trace directly to [EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md):
+- All working hypotheses and instructional assumptions are treated as `CANDIDATE CLAIMS / RESEARCH LEADS` until audited against empirical literature.
+- Claims are graded across the 8-tier epistemic hierarchy (`ESTABLISHED`, `STRONG EVIDENCE`, `MODERATE EVIDENCE`, `LIMITED EVIDENCE`, `EXPERT CONSENSUS`, `PLAUSIBLE / HYPOTHESIS`, `UNSUPPORTED`, `CONFLICTING EVIDENCE`).
 
 ---
 
 ## 4. Assessment & Diagnostic Model
 
-- **Initial Baseline Battery**: Administered via [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md) and scored via [SCORING_MODEL.md](../assessment/SCORING_MODEL.md). Never assumes a flat A0/A1 starting point.
-- **Intake Questionnaire**: Administered via [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md) to calibrate daily energy windows, auditory gear, and communicative urgency.
-- **Retest Schedule**: Administered via [RETEST_PROTOCOL.md](../assessment/RETEST_PROTOCOL.md) using a 3-form alternate item pool (Forms A, B, C) at 90-day intervals to eliminate test-retest practice effects.
-- **Bottleneck Identification**: The system applies the Weakest Link Theorem to continuously detect the specific dimension constraining communicative output and automatically tilts daily study allocation toward it.
+- **Diagnostic Nature & Scope**: Internal formative profiling tool informed by CEFR descriptors. **Not an accredited or certified Council of Europe examination**.
+- **Item Copyright Protection**: Cites original frameworks (CEFR 2020, Cambridge EVP/EGP, Nation's VLT). All test items in [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md) are original custom diagnostic items.
+- **Adaptive Routing & Early Stopping**: Core A1/A2 routing with optional extension up to C1/C2 if performance warrants. Early stopping halts testing when accuracy drops $<40\%$ to prevent fatigue.
+- **Longitudinal Schedule**: Derived from psycholinguistic research on practice effects and adult L2 acquisition rates; operationalized as weekly formative micro-checks, monthly vocabulary checks, and 90-day alternate-form milestone retests.
 
 ---
 
 ## 5. Vocabulary Acquisition Model
 
-- **Counting Unit**: **Lemmas** and validated **Multiword Expressions (MWEs)**. Word family counting is prohibited for A0–B1 stages.
-- **Selection Algorithm**: Prioritized by frequency bands derived from COCA/BNC:
-  $$\text{Priority} = \text{Rank}_{\text{COCA}} \times \text{CommunicativeUtility} \times \text{CEFRBand}_{\text{EVP}} \times \text{DomainRelevance}$$
-  - *Tier 1*: K1 Band (Top 1,000 general lemmas) — non-negotiable prerequisite.
-  - *Tier 2*: K2 Band (1,001–2,000 general lemmas) — covers ~85% of spoken discourse.
+- **Counting Unit**: **Lemmas** and validated **Multiword Expressions (MWEs)**. Word family counting is avoided at A0–B1 stages to prevent inflating presumed morphological knowledge.
+- **Corpus Frequency Prioritization**: Derived from BNC/COCA frequency bands:
+  - *Tier 1*: K1 Band (Top 1,000 general lemmas).
+  - *Tier 2*: K2 Band (1,001–2,000 general lemmas).
   - *Tier 3*: K3 Band + High-Frequency Workplace/Data Lexis.
-- **Intentional + Incidental Hybrid**:
-  - Intentional SRS (Anki) rapidly establishes initial receptive form-meaning recognition (10–30 words/hour).
-  - Scaffolded input (Graded readers, bimodal listening) deepens collocational and syntactic maturity.
-- **Receptive vs. Productive Division**: Receptive vocabulary target is maintained at $2.5\text{x} - 3.0\text{x}$ the productive target. Only high-utility communicative verbs, connectors, and nouns enter productive recall cards.
+- **Intentional + Incidental Hybrid**: Intentional SRS (Anki) rapidly primes receptive form-meaning recognition; scaffolded comprehensible input provides ecological consolidation and collocational depth.
+- **Coverage Filtering**: Materials assigned to the learner must maintain $\ge 95\%$ lexical coverage.
 
 ---
 
 ## 6. Grammar Model
 
-- **Pedagogical Strategy**: **Focus on Form (FonF)**. Traditional isolated grammar parsing worksheets and abstract grammatical terminology are prohibited.
-- **Syntactic Progression**: Grounded in the Cambridge English Grammar Profile (EGP):
-  - *Phase A (A1)*: SVO word order, present simple (habitual), present continuous (action in progress), modal *can*, basic prepositions of place/time (*in, on, at*).
-  - *Phase B (A2)*: Past simple regular/irregular, basic modals of necessity (*must, have to, should*), comparative adjectives, future with *going to*, basic coordinators (*because, but, so*).
-  - *Phase C (B1)*: Present perfect (unfinished time/experience), first conditional, simple passives, relative clauses (*which, that, who*).
-- **Instructional Vehicle**: Functional sentence frames embedded directly in input texts and practiced through sentence combining and cloze retrieval cards.
+- **Pedagogical Standard**: **Focus on Form (FonF)**. Rote grammar parsing worksheets and abstract grammatical terminology are banned.
+- **Progression**: Grounded in the Cambridge English Grammar Profile (EGP) from A1 basic SVO through B1/B2 complex subordination.
+- **Instructional Practice**: Practiced through functional sentence combining, cloze retrieval frames, and communicative micro-prompts.
 
 ---
 
 ## 7. Listening Comprehension Model
 
-- **Primary Input Mode**: **Bimodal Input (Reading-While-Listening)** during A0–A2 stages. Natural native audio accompanied by synchronized text to anchor phoneme-grapheme correspondences.
-- **Acoustic Decoding Curriculum**: Dedicated bottom-up training on connected speech phenomena in General American English:
-  1. Alveolar flapping ([ɾ] in *water, get it*).
-  2. Vowel reduction to schwa (/ə/ in *to, for, can, of*).
-  3. Consonant cluster elisions (*last night* $\rightarrow$ [læs naɪt]).
-  4. Linking and liaison across word boundaries.
-- **Lexical Threshold**: Listening material must strictly guarantee $\ge 95\%$ lexical coverage. Unsimplified native podcasts are prohibited for core study until B1+ proficiency.
+- **Bimodal Primacy**: Reading-While-Listening (audio + synchronized text) serves as the acoustic bridge for A0–A2 stages.
+- **Acoustic Decoding Curriculum**: Explicit bottom-up training on connected speech in General American English (alveolar flapping, schwa reduction of unstressed function words, consonant elision, linking).
+- **Lexical Threshold**: Listening material must maintain $\ge 95\%$ lexical coverage to prevent cognitive overload.
 
 ---
 
 ## 8. Reading Comprehension Model
 
-- **Extensive Reading (ER)**: Utilizing Graded Readers calibrated to the learner's vocabulary level at $\ge 98\%$ coverage to foster automatic sight-word recognition and reading fluency.
+- **Extensive Reading (ER)**: Utilizing Graded Readers calibrated to $\ge 98\%$ coverage to foster reading fluency and sight-word automatization.
 - **Intensive Reading (IR)**: Short workplace-relevant technical passages (100–250 words) analyzed for new collocations, syntax frames, and sentence mining.
-- **Tooling Support**: Clean text display, integrated Cambridge Learner dictionary lookups, and one-click sentence mining into Anki card drafts.
 
 ---
 
 ## 9. Spoken Production & Interaction Model
 
-- **Early Production**: Oral output commences in Week 1 via controlled sentence frames and vocalized retrieval.
-- **Cognitive Decoupling (CAF Triad)**:
-  - *Fluency Sessions*: Timed 4/3/2 speech routines, AI dialogues focused on communicative speed where linguistic errors are ignored.
-  - *Accuracy Sessions*: Structured articulatory drills and sentence frame completions with explicit immediate corrective feedback.
-- **AI Conversational Partner (Gemini Live)**: Low-stakes, zero-anxiety interactive speaking practice enacting specific professional and daily scenarios (daily standups, ordering, status updates).
-- **Corrective Feedback Protocol**: AI must provide explicit, metalinguistic correction (not ambiguous recasts), limited to a maximum of 2 errors per turn.
+- **Early Production**: Oral output commences in Week 1 via scaffolded sentence frames.
+- **CAF Triad Decoupling**: Fluency practice (speed, 4/3/2 drills) is strictly decoupled from accuracy drills (explicit correction).
+- **AI Voice Dialogue (Gemini Live)**: Low-stakes, zero-anxiety interactive speaking practice enacting specific professional scenarios.
+- **Explicit Feedback Protocol**: AI provides explicit, metalinguistic correction (not ambiguous recasts), limited to a maximum of 2 errors per turn.
 
 ---
 
 ## 10. Pronunciation & Articulatory Mechanics Model
 
-- **Target Accent**: **General American English (GAE)**, evaluated on international intelligibility and articulatory comprehensibility, never native-speaker mimicry.
-- **Contrastive Intervention for Brazilian Portuguese (BP) Interference**:
-  1. **Suppressing Final Epenthesis**: Articulatory stop closure drills preventing added [i] on final stops (*stop*, *job*, *big*, *internet*). (Priority Rank 1).
-  2. **Word Stress & Tonic Syllable**: Visual bolding of primary stress on polysyllabic words to entrain stress-timed English rhythm. (Priority Rank 2).
-  3. **High-Frequency Vowel Contrasts**: Minimal pair discrimination and production for /i/ vs /ɪ/ (*ship/sheep*), /æ/ vs /ɛ/ (*bad/bed*), /u/ vs /ʊ/ (*pool/pull*).
-  4. **Coda Nasal Closure**: Physical closure of lips on /m/ and tongue on /n/ to stop vowel nasalization transfer.
+- **Target Standard**: **General American English (GAE)**, targeting comfortable international intelligibility and functional comprehensibility rather than native accent mimicry.
+- **Candidate Contrastive Priorities (Modulated by Regional BP Dialect)**:
+  1. *Epenthesis Suppression*: Eliminating added [i] on final consonant stops (*stop*, *big*, *laptop*).
+  2. *Word Stress & Tonic Syllables*: Lengthening stressed syllables and reducing unstressed syllables.
+  3. *Core Vowel Contrasts*: Minimal pair training on /i/ vs /ɪ/ (*ship/sheep*), /æ/ vs /ɛ/ (*bad/bed*).
+  4. *Coda Nasal Closure*: Closing lips on /m/ and tongue on /n/ to stop vowel nasalization.
+- **Continuous Acoustic Rhythm**: Rhythm is trained as a continuous acoustic contrast (stress lengthening and schwa reduction via nPVI principles) rather than a rigid binary syllable/stress switch.
 
 ---
 
 ## 11. Writing & Composition Model
 
-- **Core Instructional Tool**: **Sentence Combining** (Saddler & Graham, 2005). Combining two or three simple kernel sentences into complex, cohesive sentences using conjunctions and relative clauses.
-- **Functional Workplace Writing**: Drafting short asynchronous technical updates, bug reports, and polite professional Slack messages.
-- **AI Feedback Guardrails**: The 4-step scaffolding protocol is mandatory: 1) Validate message meaning $\rightarrow$ 2) Identify up to 2 specific syntactic/lexical errors $\rightarrow$ 3) Elicit learner self-correction $\rightarrow$ 4) Provide target model. Full AI ghostwriting/rewriting is strictly forbidden.
+- **Core Instructional Tool**: **Sentence Combining** (Saddler & Graham, 2005). Combining kernel sentences into complex, cohesive sentences using conjunctions and relative clauses.
+- **Functional Workplace Writing**: Short Slack messages, bug reports, and pull request descriptions.
+- **AI Feedback Guardrails**: 4-step scaffolding protocol: 1) Validate meaning $\rightarrow$ 2) Highlight max 2 errors $\rightarrow$ 3) Elicit learner self-correction $\rightarrow$ 4) Provide target model. Silent AI ghostwriting is prohibited.
 
 ---
 
 ## 12. Memory & Cognitive Load Model
 
-- **Working Memory Protection**: Eliminate all extraneous cognitive load (visual clutter, complex interfaces, confusing instructions).
-- **The Testing Effect**: Every card and review event requires active retrieval from memory before revealing answers.
-- **Interleaving Rule**: The 60-minute daily session must interleave Retrieval $\rightarrow$ Input $\rightarrow$ Production. Full-day blocking (e.g., 60 minutes of flashcards) is prohibited.
-- **Fatigue Guardrail**: Deliberate cognitive effort peaks at 45–50 minutes; daily session must cleanly conclude at 60 minutes.
+- **Working Memory Protection**: Eliminate extraneous cognitive load (visual clutter, complex interfaces).
+- **The Testing Effect**: Every review event requires active retrieval before answer reveal.
+- **Interleaving Rule**: The 60-minute daily session must interleave Retrieval $\rightarrow$ Input $\rightarrow$ Production.
+- **Cognitive Budget**: Deliberate cognitive effort peaks at 45–50 minutes; daily session must cleanly conclude at 60 minutes.
 
 ---
 
 ## 13. Spaced Repetition (SRS) & Card Architecture
 
-- **Scheduler Engine**: Native Anki **FSRS-5**.
-- **Desired Retention Parameter**:
-  - Initial default: **$R = 0.90$** (minimizes frustrating card lapses during K1 core vocabulary acquisition).
-  - Dynamic scaling: Evaluated down to $R = 0.87$ or $0.85$ only if review time approaches the 15-minute daily ceiling as mature card volume exceeds 1,000 cards.
-- **Card Schema Standardization (4 Note Types)**:
+- **Scheduler Engine**: Native Anki **FSRS**.
+- **Desired Retention**: Initial default set to **0.90 (90%)** for core foundational vocabulary. Evaluated down to 0.87 or 0.85 only if mature review volume threatens the daily 15-minute timebox. Compute Minimum Recommended Retention (CMRR) used as analytical reference.
+- **Nonlinear Workload**: Acknowledges that workload scaling is rapid and nonlinear as retention approaches 1.0.
+- **Card Schemas (4 Note Types)**:
   1. `CARD-01`: Lean Receptive Lemma (Top 500 concrete nouns/verbs).
   2. `CARD-02`: Contextual Sentence Cloze (Polysemy, collocations, grammar frames).
-  3. `CARD-03`: Audio Discrimination (Minimal pairs, connected speech decoding).
+  3. `CARD-03`: Audio Discrimination (Minimal pairs, connected speech).
   4. `CARD-04`: Functional Productive Prompt (Scenario-based vocalized retrieval).
-- **Leech Policy**: Cards failing 4 times are tagged `leech_pending_reformulation`, suspended from the daily review queue to prevent review bloat, and queued for instructional reformulation.
+- **Leech Policy**: Cards failing 4 times are tagged `leech_pending_reformulation`, suspended, and queued for reformulation.
 
 ---
 
@@ -175,56 +159,46 @@ All curriculum choices, scheduling parameters, and feedback mechanisms adhere to
 └───────────────────────┴────────────────────────┴───────────────────────┘
 ```
 
-- **Execution Modes**:
-  - *Mode A (Continuous)*: 60 minutes uninterrupted on MacBook Air M4.
-  - *Mode B (Split Schedule)*: 20 minutes mobile SRS (AnkiDroid on Galaxy S24) in morning + 40 minutes deep input/production (MacBook Air) in evening.
+- **Policy Before Mathematics**: Governed by operational priority rules and cognitive timeboxes rather than fake mathematical formulas.
 - **Workload Throttling Invariant**:
-  $$\text{If } \text{Daily Reviews} > 15 \text{ min} \implies \text{New Cards Introduced} = 0$$
+  $$\text{If } \text{Daily Reviews} > 15 \text{ min } \implies \text{New Cards Introduced} = 0$$
+- **Core vs. Ambient Separation**: Core study is guaranteed and independent of ambient exposure. Ambient exposure is tracked separately as optional bonus.
+- **Execution Modes**: Mode A (continuous 60m on MacBook Air) and Mode B (split 20m morning AnkiDroid on S24 + 40m evening on MacBook Air).
 
 ---
 
 ## 15. Metrics & Measurement Framework
 
-- **Leading Indicators (Daily/Weekly Behavior)**:
-  - Session adherence rate ($\ge 85\%$).
-  - Review queue clearance within timebox.
-  - True retention rate ($88\% - 92\%$).
-  - Bimodal words heard/read ($\ge 2,000$ words/week).
-  - Sentences vocalized aloud ($\ge 15$ sentences/day).
-- **Lagging Outcomes (Quarterly Mastery)**:
-  - Measured shift in the multi-dimensional CEFR vector $\vec{P}$.
-  - Growth in validated receptive lemmas (VLT).
-  - Epenthesis suppression rate in spontaneous speech.
-  - Acoustic connected speech comprehension score at 1.0x speed.
+- **Leading Indicators (Daily/Weekly Behavior)**: Adherence rate ($\ge 85\%$), review queue clearance, true retention ($88\% - 92\%$), bimodal input volume ($\ge 2,000$ words/week), sentences vocalized ($\ge 15$/day).
+- **Lagging Outcomes (Periodic Mastery)**: Measured shift in the multi-dimensional vector $\vec{P}$, growth in validated receptive lemmas, unassisted connected speech comprehension, epenthesis suppression in spontaneous speech.
 
 ---
 
-## 16. Tool & Hardware Ecosystem Leverage
+## 16. Tool & Ecosystem Leverage (Verified September 2026)
 
-- **Google AI Pro (Gemini Advanced)**: Primary real-time spoken conversational partner (Gemini Live), multimodal pronunciation feedback, and NotebookLM podcast/audio generation.
-- **Claude Code Pro**: Automation engine for text frequency filtering, sentence mining extraction, deterministic repository validation, and card syntax compilation.
-- **MacBook Air M4**: Deep workstation for 40-minute input/production blocks, Anki desktop management, local whisper transcription, and writing composition.
-- **Galaxy S24 Ultra**: Mobile workstation for 15-minute AnkiDroid review micro-sessions and on-the-go Gemini Live spoken dialogues.
-- **Curated Free Resources**: Cambridge Learner's Dictionary (CEFR lexis), YouGlish (authentic video context), Forvo (native audio pronunciation), COCA (frequency validation), Voice of America (scaffolded bimodal input).
+- **Google AI Pro (R$ 96,99/mês in Brazil)**: Access to Gemini 3.1 Pro, Antigravity rate limits, Workspace integration, Deep Research, 5TB storage. Gemini Live on Galaxy S24 Ultra serves as primary voice speaking partner; NotebookLM Audio Overview generates calibrated podcasts from user texts.
+- **Claude Code Pro**: Agentic engineering CLI for text frequency profiling, sentence mining extraction, deterministic validation, and card compilation. (Not a voice tutor).
+- **MacBook Air M4**: Deep workstation for 40-minute input/production blocks, Anki desktop management, local whisper transcription.
+- **Galaxy S24 Ultra**: Mobile companion for 15-minute AnkiDroid reviews, Gemini Live spoken practice, ambient audio listening, S-Pen handwriting.
+- **Curated Free Resources**: Cambridge Learner's Dictionary, YouGlish, Forvo, COCA, VOA Learning English, Project Gutenberg.
 
 ---
 
 ## 17. Tracked Open Questions & Dependencies
 
-- **[DEP-01] Learner Diagnostic Execution**: The exact initialization of $\vec{P}$ and dynamic routine weights depends on the learner completing [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md) and [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md).
+- **[DEP-01] Learner Diagnostic Execution**: Calibration of vector $\vec{P}$ and dynamic routine weights depends on the learner completing [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md) and [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md).
 - **[DEP-02] Anki Sync Strategy**: Selection between AnkiWeb cloud sync or local AnkiConnect desktop automation (deferred to Phase 03).
-- **[DEP-03] Audio Generation Provider**: Evaluation of high-quality local vs cloud TTS for custom sentence card audio generation (deferred to Phase 04 ADR).
+- **[DEP-03] Audio Generation Provider**: Evaluation of local vs cloud TTS for card audio (deferred to Phase 04 ADR).
 
 ---
 
-## 18. Phase 03 Input Contract (Preconditions for Next Phase)
+## 18. Phase 03 Input Contract & Gate Status
 
-Phase 03 (**Daily Journey & Card Architecture**) may strictly consume the following validated specifications from Phase 02:
-1. The 4 standardized card taxonomies defined in Section 13.
-2. The FSRS-5 configuration parameters ($R = 0.90$, steps = `10m`, max interval = `365d`, 4-lapse leech policy).
-3. The 3-block modular timebox (15m SRS / 30m Input / 15m Output).
-4. The BP-contrastive pronunciation priority matrix from [0006-pronunciation-brazilian-portuguese.md](../research/0006-pronunciation-brazilian-portuguese.md).
+Phase 03 (**Daily Journey & Card Architecture**) requires as its mandatory starting input:
+1. The learner's completed diagnostic test data and computed vector $\vec{P}$.
+2. The 4 standardized card taxonomies defined in Section 13.
+3. The FSRS configuration parameters ($R = 0.90$, steps = `10m`, max interval = `365d`, 4-lapse leech policy).
+4. The 3-block modular timebox (15m SRS / 30m Input / 15m Output).
 5. The 4-step AI corrective feedback scaffolding protocol.
-6. The diagnostic scoring algorithms and vector profile structure from [SCORING_MODEL.md](../assessment/SCORING_MODEL.md).
 
-**Phase 03 Boundary**: Phase 03 must NOT select web/backend application frameworks or database storage technologies; all application architecture remains deferred to Phase 04.
+**Gate Status**: Phase 03 remains **LOCKED** until the user executes the diagnostic protocol and submits intake responses. All application stack decisions remain strictly deferred to Phase 04 per ADR-0000.
