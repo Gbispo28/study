@@ -5,9 +5,9 @@
 ```
 Phase 01: Foundation & Governance (COMPLETE — Gate 1 Passed)
    ↓
-Phase 02: Product Discovery & SLA Specification (READY / NEXT)
+Phase 02: Product Discovery & SLA Specification (COMPLETE — Gate 2: Blocked on Learner Baseline)
    ↓
-Phase 03: Daily Journey & Card Architecture
+Phase 03: Daily Journey & Card Architecture (READY PENDING BASELINE)
    ↓
 Phase 04: Architecture & Stack Decision (ADRs)
    ↓
@@ -33,19 +33,24 @@ Phase 08: Multi-Device Automation & Hardening
 
 ---
 
-## Phase 02: Product Discovery & SLA Specification (Status: READY / NEXT)
-- [ ] Comprehensive diagnostic model to establish true baseline (CEFR A0/A1).
-- [ ] Empirical research review: Optimal vocabulary acquisition sequence for Portuguese speakers.
-- [ ] Phonological contrastive analysis: English vs Brazilian Portuguese phonemes.
-- [ ] Cognitive load model for a 60-minute daily study window.
+## Phase 02: Product Discovery & SLA Specification (Status: COMPLETE | Gate 2: BLOCKED ON LEARNER BASELINE)
+- [x] Standardized 7-part diagnostic test battery and scoring model ([docs/assessment/](../assessment/README.md)).
+- [x] Master evidence matrix with 16 graded claims and 4 hypothesis audits ([docs/research/EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md)).
+- [x] 10 peer-reviewed research notes covering SLA, memory, vocabulary, input, output, phonetics, grammar, and tools ([docs/research/](../research/README.md)).
+- [x] Contrastive phonological priority matrix: Brazilian Portuguese to General American English.
+- [x] Mathematical 60-minute routine allocation model (3-block modular architecture + dynamic engine).
+- [x] FSRS-5 scheduling configuration and card taxonomy (4 note types).
+- [x] Canonical pedagogical invariants ([LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md)).
+- [x] Master system specification ([LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md)).
 
 ---
 
-## Phase 03: Daily Journey & Card Architecture (Status: Planned)
-- [ ] Detailed protocol for the 60-minute daily routine (Review, Focused Input, Production).
-- [ ] Anki note type architecture (Sentence Cloze, Audio Prompt, Articulation drill).
-- [ ] FSRS configuration parameters (retention targets, maximum interval, lapse management).
-- [ ] Galaxy S24 Ultra (mobile) + MacBook Air M4 (desktop) handoff journey.
+## Phase 03: Daily Journey & Card Architecture (Status: Ready Pending Baseline)
+- [ ] Ingest completed baseline diagnostic results and initialize state vector $\vec{P}$.
+- [ ] Detailed daily protocol and device transitions (Galaxy S24 Ultra morning $\rightarrow$ MacBook Air evening).
+- [ ] Implementation of Anki note type templates (fields, CSS, mobile touch targets, cloze styling).
+- [ ] FSRS configuration profile setup in Anki Desktop.
+- [ ] Initial seed batch of 100 core foundational cards (K1 Band + BP phonetics).
 
 ---
 

@@ -1,34 +1,42 @@
 # Latest Session Handoff
 
-> **Session**: Foundation Hardening & Gate 1 Closure<br>
+> **Session**: Phase 02 — Product Discovery & Learning Science Specification<br>
 > **Timestamp**: 2026-09-08<br>
 > **Branch**: `main`<br>
-> **Gate 1 Status**: `PASSED` (Phase 01 Complete | Phase 02 Ready / Next)<br>
+> **Gate 2 Status**: `BLOCKED ON LEARNER BASELINE` (Specification Complete | Awaiting Learner Test Administration)<br>
 > **Foundation Baseline Commit**: `9737f2d`<br>
+> **Phase 01 Hardening Commit**: `4b0e109`<br>
 > **Current HEAD**: Resolve dynamically at runtime with `git rev-parse HEAD`
 
 ---
 
 ## 1. Accomplished in This Session
-- Completed foundation hardening and formal closure of Gate 1.
-- Hardened `scripts/quality_gate.sh` to enforce strict Git working tree hygiene (fails on untracked non-ignored files, unstaged modifications, merge conflicts, and whitespace errors).
-- Hardened `scripts/validate_repo.py` to enforce `trigger == 'always_on'` for workspace rules, explicit agent model tiers (`pro`/`flash`), sandbox policies, and an explicit safe read-only allowlist for auditor tools.
-- Enhanced CI workflow (`.github/workflows/repository-quality.yml`) with script syntax validation (`py_compile`, `bash -n`).
-- Synchronized living documentation (`STATE.md`, `ROADMAP.md`, `BACKLOG.md`, `REQUIREMENTS.md`, `.agents/README.md`) ensuring consistent reference to Phase 04 for application stack selection.
-- Eliminated the self-referential commit SHA anti-pattern from tracked documentation in favor of a stable verification baseline.
+- Authored the complete **Cognitive & SLA Research Suite** (`docs/research/`):
+  - [EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md) with 16 peer-reviewed claims graded across the canonical 8-tier epistemic hierarchy.
+  - Formal adversarial audit of HYP-01, HYP-02, HYP-03, and HYP-04 with empirical rationales and revised operational statements.
+  - 10 comprehensive research notes (`0001` through `0010`) covering CEFR 2020, Memory Architecture, Lexical Frequency/Coverage, Receptive Skills, Spoken Production, BP Contrastive Phonetics, Writing & Grammar, Anki/FSRS Mathematics, AI Tool Capabilities, and the 60-Minute Allocation Model.
+- Authored the standardized **Diagnostic & Assessment Pack** (`docs/assessment/`):
+  - [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md) (7-part diagnostic test battery across all skills, rejecting the flat A0/A1 assumption).
+  - [CEFR_RUBRIC.md](../assessment/CEFR_RUBRIC.md) (Standardized qualitative descriptors mapping Pre-A1 to B2).
+  - [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md) (High-information questionnaire for unknown operational variables).
+  - [SCORING_MODEL.md](../assessment/SCORING_MODEL.md) (Deterministic 9-dimensional vector $\vec{P}$ scoring and bottleneck identification algorithm).
+  - [RETEST_PROTOCOL.md](../assessment/RETEST_PROTOCOL.md) (90-day alternate-form retest schedule, leading vs lagging indicators).
+- Authored the master **Product Invariants & Specifications** (`docs/product/`):
+  - [LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md) (The canonical pedagogical contract).
+  - [LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md) (Master 18-section pedagogical specification).
+  - Updated [REQUIREMENTS.md](../product/REQUIREMENTS.md) reflecting audited hypotheses and confirmed requirements.
+- Updated living project context in `docs/project/` (`STATE.md`, `ROADMAP.md`, `BACKLOG.md`).
 
 ---
 
-## 2. Active Decisions & Constraints
-- **Application Stack**: Strictly deferred to Phase 04 via ADR-0000.
-- **Phase Status**: Phase 01 is `COMPLETE` (Gate 1 `PASSED`). Phase 02 is `READY / NEXT` (not started).
-- **Agent Roles**: `orchestrator` is the sole main agent; specialists are subagents. `code-auditor` and `security-reviewer` are strictly read-only.
-- **MCP Security**: GitHub MCP configuration is documented; environment token interpolation is disabled until local/official auth is configured.
+## 2. Active Decisions & Governance Status
+- **Application Stack**: Strictly deferred to Phase 04 via ADR-0000. Zero production code written.
+- **Pedagogical Contract**: Governed by `LEARNING_PRINCIPLES.md`.
+- **FSRS Configuration**: Native FSRS-5, $R = 0.90$, `10m` steps, `365d` max interval, 4-lapse leech policy.
+- **Gate 2 Decision**: `GATE 2: BLOCKED ON LEARNER BASELINE`.
 
 ---
 
-## 3. Recommended Next Session Actions
-1. Initiate **Phase 02: Product Discovery & SLA Specification** (do not begin without explicit prompt).
-2. Formulate diagnostic questionnaire to establish learner's CEFR baseline (Task-020).
-3. Conduct SLA literature review on high-frequency vocabulary acquisition curves for Brazilian learners (Task-021).
-4. Analyze contrastive phonetics between Brazilian Portuguese and American English (Task-022).
+## 3. Recommended Next Actions
+1. Have the learner complete [LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md) and administer [BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md).
+2. Once responses are submitted, compute vector $\vec{P}$ and transition to **Phase 03: Daily Journey & Card Architecture**.

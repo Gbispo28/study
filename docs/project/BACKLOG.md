@@ -1,36 +1,33 @@
 # Project Backlog: English Learning OS
 
-## Current Iteration: Milestone 1 Completion
+## Current Iteration: Milestone 2 Completion (Product Discovery & SLA Specification)
 
-- [x] **TASK-001**: Inspect workspace, git status, environment tools, and clean up orphan metadata.
-- [x] **TASK-002**: Author canonical contracts (`AGENTS.md`, `CLAUDE.md`, `README.md`).
-- [x] **TASK-003**: Configure Antigravity workspace rules (`00` to `50`).
-- [x] **TASK-004**: Create custom agent fleet with explicit frontmatter hierarchy and sandboxing.
-- [x] **TASK-005**: Author agent skills (`plan-change`, `research-with-evidence`, etc.).
-- [x] **TASK-006**: Configure lifecycle hooks and MCP registry.
-- [x] **TASK-007**: Build zero-dependency Python repository validator (`scripts/validate_repo.py`).
-- [x] **TASK-008**: Build executable quality gate shell runner (`scripts/quality_gate.sh`).
-- [x] **TASK-009**: Configure GitHub Actions CI workflow (`repository-quality.yml`).
-- [x] **TASK-010**: Initialize living documentation suite in `docs/`.
-- [x] **TASK-011**: Execute local quality gate and adversarial audit.
-- [x] **TASK-012**: Execute pre-commit checks, atomic commit, and remote push verification.
-- [x] **TASK-013**: Produce session handoff and foundation documentation.
-- [x] **TASK-014**: Foundation hardening: Git hygiene enforcement, rule trigger strictness, auditor tool allowlist, and Gate 1 closure.
+- [x] **TASK-020**: Formulate standardized multi-dimensional diagnostic test battery ([BASELINE_PROTOCOL.md](../assessment/BASELINE_PROTOCOL.md)).
+- [x] **TASK-021**: Formulate CEFR-aligned qualitative rubrics ([CEFR_RUBRIC.md](../assessment/CEFR_RUBRIC.md)).
+- [x] **TASK-022**: Author concise learner intake questionnaire ([LEARNER_INTAKE.md](../assessment/LEARNER_INTAKE.md)).
+- [x] **TASK-023**: Design deterministic scoring model and vector algorithm ([SCORING_MODEL.md](../assessment/SCORING_MODEL.md)).
+- [x] **TASK-024**: Specify longitudinal retesting protocol and alternate forms ([RETEST_PROTOCOL.md](../assessment/RETEST_PROTOCOL.md)).
+- [x] **TASK-025**: Build comprehensive evidence matrix and audit repository hypotheses ([EVIDENCE_MATRIX.md](../research/EVIDENCE_MATRIX.md)).
+- [x] **TASK-026**: Conduct research reviews across 10 specialized domains (`0001` through `0010` in `docs/research/`).
+- [x] **TASK-027**: Author canonical pedagogical invariants ([LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md)).
+- [x] **TASK-028**: Synthesize master Phase 02 system specification ([LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md)).
+- [x] **TASK-029**: Audit and update product requirements ([REQUIREMENTS.md](../product/REQUIREMENTS.md)).
 
 ---
 
-## Upcoming Iteration: Milestone 2 (Product Discovery & SLA Specification)
+## Upcoming Iteration: Milestone 3 (Daily Journey & Card Architecture)
 
-- [ ] **TASK-020**: Formulate initial diagnostic questionnaire for English baseline calibration.
-- [ ] **TASK-021**: Conduct SLA literature review on high-frequency vocabulary acquisition for Brazilian adults.
-- [ ] **TASK-022**: Map contrastive phonetics between Brazilian Portuguese and American English.
-- [ ] **TASK-023**: Design the mathematical time-allocation model for the 60-minute daily session.
-- [ ] **TASK-024**: Specify the Anki note schema and FSRS retention target trade-offs.
+- [ ] **TASK-030**: Ingest completed learner baseline results and compute vector $\vec{P}$.
+- [ ] **TASK-031**: Author detailed 60-minute daily journey specification across MacBook Air M4 and Galaxy S24 Ultra.
+- [ ] **TASK-032**: Specify and prototype Anki note types (HTML/CSS templates for the 4 standardized note types).
+- [ ] **TASK-033**: Document FSRS configuration preset and step-by-step Anki Desktop setup guide.
+- [ ] **TASK-034**: Curate initial seed vocabulary batch (first 100 cards: K1 concrete lemmas + contrastive minimal pairs).
+- [ ] **TASK-035**: Formulate Phase 03 handoff and Gate 3 review criteria.
 
 ---
 
-## Icebox / Future Investigations
+## Icebox / Future Architectural Investigations
 
-- [ ] **TASK-050**: Evaluate Web Speech API vs Whisper API for offline pronunciation feedback.
-- [ ] **TASK-051**: Research AnkiConnect automation capabilities on macOS.
-- [ ] **TASK-052**: Prototype Galaxy S24 Ultra audio transfer / sync workflows.
+- [ ] **TASK-050**: Evaluate Web Speech API vs Whisper API vs Gemini Live for real-time pronunciation feedback (Phase 04).
+- [ ] **TASK-051**: Research AnkiConnect automation capabilities on macOS for programmatic card insertion (Phase 04).
+- [ ] **TASK-052**: Prototype Galaxy S24 Ultra audio transfer / sync workflows (Phase 04/05).
