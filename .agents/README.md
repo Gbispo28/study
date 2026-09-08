@@ -50,4 +50,4 @@ This directory houses the Google Antigravity 2.0 configuration, rules, agents, s
 Antigravity's `mcp_config.json` passes environment variables literally to server processes without shell-style dynamic variable interpolation (`${...}`). Storing secrets or fake interpolation strings in tracked repository configuration violates our core security rules.
 
 - **GitHub MCP**: When enabling GitHub MCP, configure it locally via `~/.gemini/config/mcp_config.json` or through Antigravity's Settings UI using your authenticated credentials.
-- **Deferred Integrations**: Database, browser, and third-party MCPs are deferred until Phase 2 architecture decisions require them, preventing tool sprawl.
+- **Deferred Integrations**: Database, browser, and third-party MCPs are deferred until Phase 04 architecture decisions require them, preventing tool sprawl.

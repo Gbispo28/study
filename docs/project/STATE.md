@@ -1,16 +1,16 @@
 # Project State: English Learning OS
 
-> **Last Updated**: 2026-09-08  
-> **Active Milestone**: Milestone 1 — Foundation & Governance Bootstrap  
-> **Status**: Ready for Verification & Delivery
+> **Last Updated**: 2026-09-08<br>
+> **Active Milestone**: Milestone 1 — Complete (Gate 1 Passed) | Milestone 2 — Ready (Next)<br>
+> **Status**: Gate 1 Passed — Foundation Complete
 
 ---
 
 ## 1. Quick Orientation
 
-- **Current Phase**: `01-FOUNDATION`
-- **Current Objective**: Build the engineering, multi-agent, quality, and living documentation foundation for English Learning OS.
-- **Architecture Status**: Application framework, backend, and persistence are **deliberately deferred** pending ADRs. Agentic infrastructure and quality gates are operational.
+- **Current Phase**: `Phase 01: Foundation & Governance (COMPLETE)` | `Phase 02: Product Discovery & SLA Specification (READY / NEXT)`
+- **Current Objective**: Foundation hardening and Gate 1 formal closure completed; ready to initiate Phase 02 discovery.
+- **Architecture Status**: Application framework, backend, and persistence are **deliberately deferred to Phase 04** via ADR-0000. Agentic infrastructure and quality gates are operational and verified.
 
 ---
 
@@ -31,7 +31,7 @@
 
 ## 3. Important Decisions Log
 
-- **DEC-001**: Stack and technology selection is strictly deferred to Phase 2 through formal ADRs.
+- **DEC-001**: Stack and technology selection is strictly deferred to Phase 04 through formal ADRs.
 - **DEC-002**: Custom agent hierarchy is explicit: `orchestrator` is `mainAgent: true, subagent: false`; all specialists are `mainAgent: false, subagent: true` with `sandbox` policy.
 - **DEC-003**: `code-auditor` and `security-reviewer` are restricted to read-only tools to preserve adversarial independence.
 - **DEC-004**: Storing literal `${...}` in `mcp_config.json` is rejected due to runtime lack of interpolation; GitHub MCP is deferred to local/official authentication.
@@ -49,22 +49,26 @@
 
 ## 5. Blockers & Risks
 
-- **Blockers**: None.
-- **Risks**: Potential temptation in Phase 2 to begin building UI before learner baseline and SLA routine are mathematically defined. Mitigated by strict gatekeeper rules.
+- **Blockers**: None. Foundation Gate 1 is closed.
+- **Risks**: Potential temptation in Phase 02 to begin building UI before learner baseline and SLA routine are mathematically defined. Mitigated by strict gatekeeper rules.
 
 ---
 
 ## 6. Next Milestone
 
-- **Milestone 2**: Product Discovery & Learning Science Specification
+- **Milestone 2**: Product Discovery & Learning Science Specification (Ready / Next)
   - Task 1: Baseline diagnostic questionnaire & CEFR placement model.
   - Task 2: Mathematical breakdown of the 60-minute daily routine.
   - Task 3: Card design & FSRS configuration specification.
 
 ---
 
-## 7. Last Verified Git State
+## 7. Stable Verification & Baseline State
 
 - **Branch**: `main`
 - **Remote**: `origin` (`https://github.com/Gbispo28/study.git`)
-- **Last Verified Commit**: `9737f2d` (*chore: bootstrap agent-first project foundation*)
+- **Foundation Baseline Commit**: `9737f2d` (*chore: bootstrap agent-first project foundation*)
+- **Gate 1 Status**: `PASSED`
+- **Verification Suite**: `scripts/quality_gate.sh` (Integrity validator + Git hygiene gate)
+- **CI Workflow**: GitHub Actions (`.github/workflows/repository-quality.yml`)
+- **Current HEAD**: Resolve dynamically at runtime with `git rev-parse HEAD` (not stored statically to avoid self-referential commit loops)

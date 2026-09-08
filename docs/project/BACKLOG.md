@@ -12,9 +12,10 @@
 - [x] **TASK-008**: Build executable quality gate shell runner (`scripts/quality_gate.sh`).
 - [x] **TASK-009**: Configure GitHub Actions CI workflow (`repository-quality.yml`).
 - [x] **TASK-010**: Initialize living documentation suite in `docs/`.
-- [ ] **TASK-011**: Execute local quality gate and adversarial audit.
-- [ ] **TASK-012**: Execute pre-commit checks, atomic commit, and remote push verification.
-- [ ] **TASK-013**: Produce session handoff and ChatGPT handoff block.
+- [x] **TASK-011**: Execute local quality gate and adversarial audit.
+- [x] **TASK-012**: Execute pre-commit checks, atomic commit, and remote push verification.
+- [x] **TASK-013**: Produce session handoff and foundation documentation.
+- [x] **TASK-014**: Foundation hardening: Git hygiene enforcement, rule trigger strictness, auditor tool allowlist, and Gate 1 closure.
 
 ---
 

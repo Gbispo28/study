@@ -1,6 +1,6 @@
 # English Learning OS
 
-> **Current Status**: `Foundation / Bootstrap Phase`  
+> **Current Status**: `Foundation Complete (Gate 1 Passed) | Next: Phase 02 (Product Discovery)`<br>
 > An agent-first, scientifically grounded personal operating system for English mastery.
 
 ---
@@ -17,10 +17,10 @@ Rather than being a static course or a random collection of flashcards, the syst
 
 ---
 
-## 2. Current Status: Foundation Only
+## 2. Current Status: Foundation Complete (Gate 1 Passed)
 
-This repository is currently in its **Foundational Engineering Phase**.
-- **No application framework has been chosen** (frontend, backend, and database decisions are deliberately deferred to formal Architecture Decision Records).
+This repository has completed its **Foundational Engineering Phase (Gate 1 Closed)**.
+- **No application framework has been chosen** (frontend, backend, and database decisions are deliberately deferred to formal Architecture Decision Records in Phase 04).
 - **No speculative code exists**: All files in this initial phase establish governance, quality gates, custom agents, skills, workspace rules, and living documentation.
 
 ---
@@ -96,6 +96,8 @@ bash scripts/quality_gate.sh
 
 ## 6. Next Steps
 
-- **Milestone 1 (Complete)**: Bootstrap foundational engineering, agentic architecture, rules, skills, and living documentation.
-- **Milestone 2 (Next)**: Product Discovery & Learning Science Specification (analyzing 60-minute daily routine, CEFR baseline assessment, and memory optimization).
-- **Milestone 3**: Architecture Decision Records (evaluating technology stack and integration boundaries).
+- **Milestone 1 (Complete — Gate 1 Passed)**: Bootstrap foundational engineering, agentic architecture, rules, skills, and living documentation.
+- **Milestone 2 (Phase 02 — Ready / Next)**: Product Discovery & Learning Science Specification (analyzing 60-minute daily routine, CEFR baseline assessment, and memory optimization).
+- **Milestone 3 (Phase 03 — Planned)**: Daily Journey & Card Architecture.
+- **Milestone 4 (Phase 04 — Planned)**: Architecture Decision Records (evaluating technology stack and integration boundaries).
+- **Milestone 5 (Phase 05 — Planned)**: Core MVP Implementation.

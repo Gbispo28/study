@@ -27,16 +27,50 @@ fi
 echo -e "\n${CYAN}[1/2] Executing Repository Integrity Validator...${NC}"
 python3 scripts/validate_repo.py
 
-# 2. Check Git Working Tree & Submodules
-echo -e "\n${CYAN}[2/2] Checking Git Hygiene & Untracked Files...${NC}"
+# 2. Check Git Working Tree Hygiene
+echo -e "\n${CYAN}[2/2] Checking Git Hygiene & Working Tree State...${NC}"
 if command -v git &>/dev/null && [ -d ".git" ]; then
-    UNTRACKED=$(git status --porcelain | grep '^??' || true)
-    if [ -n "$UNTRACKED" ]; then
-        echo -e "${CYAN}[NOTE] Untracked files present in workspace:${NC}"
-        echo "$UNTRACKED"
-    else
-        echo -e "${GREEN}✔ Working tree is clean or fully staged.${NC}"
+    HYGIENE_FAILED=0
+
+    # 2a. Check for unresolved merge conflicts
+    CONFLICTS=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+    if [ -n "$CONFLICTS" ]; then
+        echo -e "${RED}[ERROR] Unresolved merge conflicts detected in:${NC}"
+        echo "$CONFLICTS" | sed 's/^/  ✖ /'
+        HYGIENE_FAILED=1
     fi
+
+    # 2b. Check for untracked non-ignored files
+    UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null || true)
+    if [ -n "$UNTRACKED" ]; then
+        echo -e "${RED}[ERROR] Untracked non-ignored files detected in workspace:${NC}"
+        echo "$UNTRACKED" | sed 's/^/  ✖ /'
+        echo -e "${RED}Remedy: Stage valid files (git add) or add them to .gitignore.${NC}"
+        HYGIENE_FAILED=1
+    fi
+
+    # 2c. Check for tracked modifications that are NOT staged
+    if ! git diff --quiet 2>/dev/null; then
+        echo -e "${RED}[ERROR] Tracked files contain unstaged modifications:${NC}"
+        git diff --name-only 2>/dev/null | sed 's/^/  ✖ /'
+        echo -e "${RED}Remedy: Stage modifications (git add) or revert unneeded changes.${NC}"
+        HYGIENE_FAILED=1
+    fi
+
+    # 2d. Check staged diff for whitespace errors
+    if ! git diff --cached --check 2>/dev/null; then
+        echo -e "${RED}[ERROR] Staged diff contains whitespace/formatting errors (see output above).${NC}"
+        HYGIENE_FAILED=1
+    fi
+
+    if [ "$HYGIENE_FAILED" -ne 0 ]; then
+        echo -e "\n${RED}====================================================${NC}"
+        echo -e "${RED}   QUALITY GATE STATUS: FAILED (Git Hygiene)        ${NC}"
+        echo -e "${RED}====================================================${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✔ Working tree hygiene verified (no untracked files, no unstaged edits, clean staged diff).${NC}"
 else
     echo -e "${CYAN}[SKIP] Not inside a git repository or git command missing.${NC}"
 fi

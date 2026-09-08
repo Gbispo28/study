@@ -39,7 +39,7 @@
 ## 4. Deferred Decisions
 
 - [DEF-01] **Application Stack**: Web vs Desktop vs CLI application framework (deferred to ADR-0001).
-- [DEF-02] **Database & Storage**: SQLite, JSON flat-files, PostgreSQL, or Git-based markdown storage (deferred to Phase 2 ADR).
+- [DEF-02] **Database & Storage**: SQLite, JSON flat-files, PostgreSQL, or Git-based markdown storage (deferred to Phase 04 ADR).
 - [DEF-03] **Speech & Audio Engines**: Choice of TTS/STT providers (e.g., Gemini Multimodal Live API, ElevenLabs, OpenAI Whisper, or native Web Speech API).
 - [DEF-04] **Deployment Target**: Local-only, self-hosted container, or cloud deployment.
 

@@ -160,14 +160,24 @@ def run_checks():
             continue
         content = rule_file.read_text(encoding="utf-8")
         fm = extract_frontmatter(content)
-        if not fm.get("trigger"):
-            errors.append(f"Rule .agents/rules/{rule_name} missing 'trigger' frontmatter")
+        trigger = fm.get("trigger")
+        if trigger != "always_on":
+            errors.append(f"Rule .agents/rules/{rule_name} 'trigger' must be 'always_on' (found '{trigger}')")
         if not fm.get("description"):
             errors.append(f"Rule .agents/rules/{rule_name} missing 'description' frontmatter")
         checks_passed += 1
 
     # 4. Check Custom Agents
     agents_dir = REPO_ROOT / ".agents" / "agents"
+    ALLOWED_MODELS = {"pro", "flash"}
+    AUDITOR_SAFE_TOOLS = {
+        "view_file",
+        "grep_search",
+        "list_dir",
+        "search_web",
+        "read_url_content",
+    }
+
     for agent_name in MANDATORY_AGENTS:
         agent_file = agents_dir / agent_name / "agent.md"
         if not agent_file.exists():
@@ -175,12 +185,12 @@ def run_checks():
             continue
         content = agent_file.read_text(encoding="utf-8")
         fm = extract_frontmatter(content)
-        if not fm.get("name"):
-            errors.append(f"Agent {agent_name} missing 'name' in frontmatter")
+        if fm.get("name") != agent_name:
+            errors.append(f"Agent {agent_name} 'name' in frontmatter must be '{agent_name}' (found '{fm.get('name')}')")
         if not fm.get("description"):
             errors.append(f"Agent {agent_name} missing 'description' in frontmatter")
-        if not fm.get("model"):
-            errors.append(f"Agent {agent_name} missing 'model' in frontmatter")
+        if fm.get("model") not in ALLOWED_MODELS:
+            errors.append(f"Agent {agent_name} model '{fm.get('model')}' not in allowed tiers {ALLOWED_MODELS}")
         if "mainAgent" not in fm:
             errors.append(f"Agent {agent_name} missing explicit 'mainAgent' in frontmatter")
         if "subagent" not in fm:
@@ -190,21 +200,23 @@ def run_checks():
         if agent_name == "orchestrator":
             if fm.get("mainAgent") is not True or fm.get("subagent") is not False:
                 errors.append("Orchestrator must have mainAgent: true and subagent: false")
+            if fm.get("model") != "pro":
+                errors.append(f"Orchestrator must use model 'pro' (found '{fm.get('model')}')")
         else:
             if fm.get("mainAgent") is not False or fm.get("subagent") is not True:
                 errors.append(f"Specialist agent {agent_name} must have mainAgent: false and subagent: true")
             if fm.get("commandExecutionPolicy") != "sandbox":
-                warnings.append(f"Agent {agent_name} does not have commandExecutionPolicy: sandbox")
+                errors.append(f"Specialist agent {agent_name} must have commandExecutionPolicy: 'sandbox' (found '{fm.get('commandExecutionPolicy')}')")
 
-        # Read-only tool restriction check for auditors
+        # Safe read-only tool allowlist check for auditors
         if agent_name in ["code-auditor", "security-reviewer"]:
             tools = fm.get("tools", [])
             if not tools:
-                errors.append(f"Auditor {agent_name} must explicitly restrict tools")
-            forbidden = {"replace_file_content", "multi_replace_file_content", "write_to_file", "run_command"}
-            active_forbidden = set(tools).intersection(forbidden)
-            if active_forbidden:
-                errors.append(f"Auditor {agent_name} contains mutating tools: {active_forbidden}")
+                errors.append(f"Auditor {agent_name} must explicitly specify tools")
+            tools_set = set(tools)
+            disallowed = tools_set - AUDITOR_SAFE_TOOLS
+            if disallowed:
+                errors.append(f"Auditor {agent_name} contains tools outside safe read-only allowlist: {sorted(disallowed)}")
 
         checks_passed += 1
 

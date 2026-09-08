@@ -3,9 +3,9 @@
 > **Governance Principle**: Phases represent logical gates, not arbitrary calendar dates. A phase is unlocked only when the preceding phase meets its Definition of Done.
 
 ```
-Phase 01: Foundation & Governance (CURRENT)
+Phase 01: Foundation & Governance (COMPLETE — Gate 1 Passed)
    ↓
-Phase 02: Product Discovery & SLA Specification
+Phase 02: Product Discovery & SLA Specification (READY / NEXT)
    ↓
 Phase 03: Daily Journey & Card Architecture
    ↓
@@ -22,17 +22,18 @@ Phase 08: Multi-Device Automation & Hardening
 
 ---
 
-## Phase 01: Foundation & Governance (Status: In Progress / Finishing)
+## Phase 01: Foundation & Governance (Status: COMPLETE | Gate 1: PASSED)
 - [x] Canonical governance contract ([AGENTS.md](../../AGENTS.md)) and Claude pairing guide ([CLAUDE.md](../../CLAUDE.md)).
 - [x] Workspace rules configured with native Antigravity frontmatter.
 - [x] Custom agent hierarchy (Orchestrator + 8 Specialists).
 - [x] Standardized skills for planning, research, implementation, verification, and Git delivery.
 - [x] Zero-dependency repository validator and automated quality gate.
 - [x] Living documentation and handoff infrastructure.
+- [x] Foundation hardening, Git hygiene gate, and Gate 1 closure.
 
 ---
 
-## Phase 02: Product Discovery & SLA Specification (Status: Next)
+## Phase 02: Product Discovery & SLA Specification (Status: READY / NEXT)
 - [ ] Comprehensive diagnostic model to establish true baseline (CEFR A0/A1).
 - [ ] Empirical research review: Optimal vocabulary acquisition sequence for Portuguese speakers.
 - [ ] Phonological contrastive analysis: English vs Brazilian Portuguese phonemes.
