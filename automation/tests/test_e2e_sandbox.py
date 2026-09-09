@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-End-to-End Controlled Sandbox Cycle Test for English Learning OS Automation Control Plane.
+SANDBOX INTEGRATION LIFECYCLE TEST for English Learning OS Automation Control Plane.
 Demonstrates a complete task lifecycle in a temporary sandbox environment:
 real temporary task -> runner -> working tree modification -> selective staging ->
 local commit -> deterministic audit (Stage A) -> model audit (Stage B) ->
 APPROVED -> terminal HUMAN_REQUIRED behavior (Gate 2 Learner Baseline blocker).
 Zero mutation to production repository.
+Mocks external boundaries (agy executor, model audit, remote CI).
 """
 
 import os
@@ -22,7 +23,7 @@ from automation.auditor import AutomatedAuditor
 
 
 class TestEndToEndSandboxCycle(unittest.TestCase):
-    """End-to-end integration proof demonstrating one complete autonomous task cycle."""
+    """SANDBOX INTEGRATION LIFECYCLE TEST: Demonstrates complete lifecycle with sandboxed external boundaries."""
 
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -106,6 +107,12 @@ class TestEndToEndSandboxCycle(unittest.TestCase):
 
 ## 1. Context & Objective
 Add a documentation note in docs/notes/sandbox.md for verification.
+
+## 2. Scope & Allowed Paths
+allowed_paths:
+  - docs/notes/sandbox.md
+allowed_path_prefixes:
+  - docs/notes/
 """
         task_file = self.runner.current_task_file
         task_file.write_text(task_content, encoding="utf-8")

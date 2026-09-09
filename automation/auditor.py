@@ -24,6 +24,7 @@ import time
 import json
 import signal
 import shutil
+import tempfile
 import re
 import hashlib
 import argparse
@@ -37,6 +38,8 @@ SECRET_PATTERNS = [
     re.compile(r"\bghp_[A-Za-z0-9_]{20,80}"),
     re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,90}"),
     re.compile(r"\bAIza[0-9A-Za-z-_]{30,50}"),
+    # Google AI Studio modern AQ.-style keys (bare tokens without assignment prefix)
+    re.compile(r"\bAQ\.[A-Za-z0-9_-]{20,90}"),
     re.compile(r"\bsk-(?:proj-|admin-)?[A-Za-z0-9_-]{20,90}"),
     re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,90}"),
     re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,60}"),
@@ -70,6 +73,57 @@ def scan_text_for_secrets(text: str) -> Tuple[bool, str]:
         if pattern.search(text):
             return (True, f"Potential credential pattern detected (matched regex {pattern.pattern[:30]}...)")
     return (False, "")
+
+
+def parse_auditor_response(raw_output: str) -> Tuple[bool, Dict[str, Any], str]:
+    """
+    Parses agy output, extracting outer envelope if present,
+    then extracting and validating inner structured JSON schema.
+    Handles real agy JSON outer envelope: {"response": "..."}
+    and markdown code fences (```json ... ```).
+    """
+    cleaned_input = raw_output.strip()
+    if not cleaned_input:
+        return (False, {}, "Empty output from auditor model.")
+
+    candidate_text = cleaned_input
+    # 1. Unpack outer JSON envelope if present
+    try:
+        envelope = json.loads(cleaned_input)
+        if isinstance(envelope, dict) and "response" in envelope:
+            candidate_text = envelope["response"]
+    except Exception:
+        pass
+
+    candidate_text = candidate_text.strip()
+    # 2. Extract JSON payload from text (handling markdown code fences or raw JSON)
+    fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", candidate_text, re.IGNORECASE)
+    if fence_match:
+        json_str = fence_match.group(1).strip()
+    else:
+        json_match = re.search(r"\{[\s\S]*\}", candidate_text)
+        if json_match:
+            json_str = json_match.group(0).strip()
+        else:
+            return (False, {}, f"Auditor output does not contain JSON block: {candidate_text[:200]}")
+
+    try:
+        data = json.loads(json_str)
+    except Exception as e:
+        return (False, {}, f"JSON parse error: {e}")
+
+    if not isinstance(data, dict):
+        return (False, {}, "Parsed JSON is not an object.")
+
+    verdict = data.get("verdict")
+    if verdict not in ["APPROVED", "FIX_REQUIRED", "HUMAN_REQUIRED"]:
+        return (False, {}, f"Invalid verdict in auditor payload: '{verdict}'")
+
+    findings = data.get("findings")
+    if not isinstance(findings, list):
+        return (False, {}, "Auditor findings must be a list.")
+
+    return (True, data, "Valid auditor response schema.")
 
 
 class SafeLogger:
@@ -181,6 +235,34 @@ class AutomatedAuditor:
         if not path.exists():
             return ""
         return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def extract_task_id(self, task_content: str) -> Optional[str]:
+        """Extracts task_id from task specification markdown."""
+        m = re.search(r"\*\*Task ID\*\*:\s*`?([A-Za-z0-9_-]+)`?", task_content)
+        if m:
+            return m.group(1).strip()
+        m2 = re.search(r"^#\s+Task:\s*([A-Za-z0-9_-]+)", task_content, re.MULTILINE)
+        if m2:
+            return m2.group(1).strip()
+        return None
+
+    def get_repo_fingerprint(self) -> Dict[str, Any]:
+        """Captures comprehensive repository fingerprint to detect any mutation."""
+        try:
+            status = subprocess.check_output(["git", "status", "--porcelain", "-uall"], cwd=self.repo_root, text=True)
+            head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+            branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=self.repo_root, text=True).strip()
+            refs = subprocess.check_output(["git", "show-ref"], cwd=self.repo_root, text=True).strip()
+            index_clean = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=self.repo_root).returncode == 0
+            return {
+                "status": status,
+                "head": head,
+                "branch": branch,
+                "refs": refs,
+                "index_clean": index_clean,
+            }
+        except Exception as e:
+            return {"error": str(e)}
 
     def verify_remote_commit(self, commit_sha: str) -> Tuple[bool, str]:
         """Verifies that commit exists on remote origin/main."""
@@ -334,8 +416,9 @@ class AutomatedAuditor:
 
         FAIL CLOSED REQUIREMENT:
         Approval strictly requires: matching workflow run on GitHub Actions for commit_sha,
+        specifically pinned to .github/workflows/repository-quality.yml ("Repository Quality Gate"),
         status == 'completed', and conclusion == 'success'.
-        Anything else MUST NOT produce approval.
+        Unrelated green workflows on the same commit MUST NOT satisfy this gate.
         """
         if self.config.get("skip_ci_for_tests", False):
             return (True, "SUCCESS", "CI check bypassed by explicit test configuration.")
@@ -345,8 +428,21 @@ class AutomatedAuditor:
             return (False, "UNVERIFIABLE", "gh CLI not available on system; cannot verify remote CI.")
 
         try:
+            # Query runs specifically for repository-quality.yml workflow
             proc = subprocess.run(
-                [gh_bin, "run", "list", "--commit", commit_sha, "--json", "status,conclusion,name,databaseId", "--limit", "5"],
+                [
+                    gh_bin,
+                    "run",
+                    "list",
+                    "--workflow",
+                    "repository-quality.yml",
+                    "--commit",
+                    commit_sha,
+                    "--json",
+                    "status,conclusion,name,workflowName,databaseId",
+                    "--limit",
+                    "5",
+                ],
                 cwd=self.repo_root,
                 capture_output=True,
                 text=True,
@@ -356,20 +452,34 @@ class AutomatedAuditor:
                 return (False, "UNVERIFIABLE", f"gh query failed: {proc.stderr.strip()}")
 
             runs = json.loads(proc.stdout)
-            if not runs:
-                return (False, "PENDING", f"No CI runs recorded yet for commit {commit_sha[:7]}.")
+            # Filter specifically for Repository Quality Gate workflow (exclude unrelated workflows)
+            matching_runs = []
+            for r in runs:
+                w_name = r.get("name") or r.get("workflowName")
+                if w_name:
+                    clean_name = str(w_name).lower().replace(".yml", "").replace(".yaml", "").replace(" ", "-")
+                    if clean_name not in ["repository-quality-gate", "repository-quality"]:
+                        continue
+                matching_runs.append(r)
 
-            latest = runs[0]
+            if not matching_runs:
+                return (
+                    False,
+                    "PENDING",
+                    f"No required 'Repository Quality Gate' CI runs recorded yet for commit {commit_sha[:7]}.",
+                )
+
+            latest = matching_runs[0]
             status = latest.get("status")
             conclusion = latest.get("conclusion")
             run_id = latest.get("databaseId", "unknown")
 
             if status == "completed" and conclusion == "success":
-                return (True, "SUCCESS", f"CI run #{run_id} completed successfully.")
+                return (True, "SUCCESS", f"Required CI workflow 'Repository Quality Gate' (run #{run_id}) completed successfully.")
             elif status == "completed":
-                return (False, "FAILED", f"CI run #{run_id} completed with negative conclusion: '{conclusion}'.")
+                return (False, "FAILED", f"Required CI workflow 'Repository Quality Gate' (run #{run_id}) completed with negative conclusion: '{conclusion}'.")
             else:
-                return (False, "PENDING", f"CI run #{run_id} is currently '{status}' (conclusion: '{conclusion}').")
+                return (False, "PENDING", f"Required CI workflow 'Repository Quality Gate' (run #{run_id}) is currently '{status}' (conclusion: '{conclusion}').")
 
         except Exception as e:
             return (False, "UNVERIFIABLE", f"CI audit query exception: {e}")
@@ -400,6 +510,9 @@ class AutomatedAuditor:
             })
             return (True, mock_res, "mock-auditor")
 
+        # 1. Capture Pre-Stage B Repository Baseline Fingerprint
+        pre_fingerprint = self.get_repo_fingerprint()
+
         agy_bin = self.config.get("agy_binary", "/Users/gmbispo/.local/bin/agy")
         if not Path(agy_bin).exists():
             agy_bin = shutil.which("agy") or agy_bin
@@ -407,12 +520,21 @@ class AutomatedAuditor:
         if not Path(agy_bin).exists():
             return (False, {}, f"Antigravity CLI not found at '{agy_bin}'")
 
-        prompt = f"""You are the Independent Automated Auditor for English Learning OS.
+        # 2. Construct Isolated External Evidence Bundle outside the repository
+        with tempfile.TemporaryDirectory(prefix="agy_auditor_evidence_") as evidence_dir:
+            ev_path = Path(evidence_dir)
+            (ev_path / "CURRENT_TASK.md").write_text(task_content, encoding="utf-8")
+            (ev_path / "COMMIT_DIFF.patch").write_text(diff_text, encoding="utf-8")
+            (ev_path / "CHANGED_FILES.json").write_text(json.dumps(changed_files, indent=2), encoding="utf-8")
+            (ev_path / "CI_SUMMARY.txt").write_text(ci_summary, encoding="utf-8")
+
+            prompt = f"""You are the Independent Automated Auditor for English Learning OS.
 Your task is to independently review task execution against read-only evidence.
 
 EVALUATION INVARIANTS:
 1. EXECUTOR != AUDITOR: You are a separate adversarial reviewer.
-2. Read-only audit: You have NO ability to modify repository code.
+2. Read-only audit: You are executing in an isolated evidence directory outside the repository.
+   You have NO repository write capabilities and must not attempt filesystem mutations.
 3. Validate requirements coverage, boundary safety, and code quality.
 4. Output STRICT JSON ONLY matching this schema:
 {{
@@ -424,58 +546,61 @@ EVALUATION INVARIANTS:
 }}
 
 EVIDENCE:
-- Task Specification:
+- Task Specification (from CURRENT_TASK.md):
 {task_content[:1500]}
 
 - Commit SHA: {commit_sha}
 - Changed Files: {json.dumps(changed_files)}
 - CI Evidence: {ci_summary}
-- Staged Diff (Truncated):
+- Staged Diff (from COMMIT_DIFF.patch, Truncated):
 {diff_text[:3000]}
 """
-        cmd = [
-            agy_bin,
-            "-p",
-            prompt,
-            "--model",
-            model_name,
-            "--output-format",
-            "json",
-            "--dangerously-skip-permissions",
-        ]
-        try:
-            self.logger.info(f"Invoking independent auditor model ({model_name})...")
-            proc = subprocess.run(
-                cmd,
-                cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                timeout=self.config.get("audit_timeout_seconds", 180),
-            )
+            cmd = [
+                agy_bin,
+                "-p",
+                prompt,
+                "--model",
+                model_name,
+                "--agent",
+                "code-auditor",
+                "--output-format",
+                "json",
+                "--dangerously-skip-permissions",
+            ]
+            try:
+                self.logger.info(f"Invoking independent auditor model ({model_name}) in isolated evidence boundary...")
+                proc = subprocess.run(
+                    cmd,
+                    cwd=evidence_dir,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.config.get("audit_timeout_seconds", 180),
+                )
+                raw_out = proc.stdout.strip()
+            except subprocess.TimeoutExpired:
+                return (False, {}, "Auditor model execution timed out.")
+            except Exception as e:
+                return (False, {}, f"Auditor model execution error: {e}")
+
+            # 3. Capture Post-Stage B Repository Baseline Fingerprint & Assert Zero Mutation
+            post_fingerprint = self.get_repo_fingerprint()
+            if pre_fingerprint != post_fingerprint:
+                err_msg = (
+                    "AUDITOR_CONTAINMENT_VIOLATION: Repository mutation detected during Stage B model audit! "
+                    f"pre={pre_fingerprint}, post={post_fingerprint}"
+                )
+                self.logger.error(err_msg)
+                return (False, {}, err_msg)
+
             if proc.returncode != 0:
                 return (False, {}, f"Auditor model returned non-zero code {proc.returncode}: {proc.stderr.strip()}")
 
-            raw_out = proc.stdout.strip()
-            # Extract JSON block from output
-            json_match = re.search(r"\{[\s\S]*\}", raw_out)
-            if not json_match:
-                return (False, {}, f"Auditor model output did not contain valid JSON: {raw_out[:200]}")
+            # 4. Structured Output Parsing (Envelope + Code fence + Schema validation)
+            parse_ok, parsed_data, parse_msg = parse_auditor_response(raw_out)
+            if not parse_ok:
+                return (False, {}, f"Auditor model output validation failed: {parse_msg}")
 
-            parsed = json.loads(json_match.group(0))
-
-            # Validate schema
-            verdict = parsed.get("verdict")
-            if verdict not in ["APPROVED", "FIX_REQUIRED", "HUMAN_REQUIRED"]:
-                return (False, {}, f"Auditor model returned invalid verdict: '{verdict}'")
-
-            findings = parsed.get("findings")
-            if not isinstance(findings, list):
-                return (False, {}, "Auditor model findings must be a list.")
-
-            return (True, parsed, model_name)
-
-        except Exception as e:
-            return (False, {}, f"Auditor model execution error: {e}")
+            return (True, parsed_data, model_name)
 
     def plan_next_operational_state(self, current_task_id: str) -> Dict[str, Any]:
         """
@@ -496,9 +621,14 @@ EVIDENCE:
             }
 
         backlog_text = backlog_file.read_text(encoding="utf-8")
+        state_text = state_file.read_text(encoding="utf-8")
 
-        # Check if Gate 2 is the active blocker
-        if "TASK-030 (GATING BLOCKER)" in backlog_text:
+        # Parse TASK-030 checklist status: unchecked vs checked
+        task_030_unchecked = bool(re.search(r"- \[ \]\s+\*\*TASK-030(?:\s*\([^)]*\))?\*\*", backlog_text))
+        gate_2_blocked = "BLOCKED ON LEARNER BASELINE" in state_text
+
+        # Only stop on TASK-030 if it is UNCHECKED AND Gate 2 is BLOCKED ON LEARNER BASELINE
+        if task_030_unchecked and gate_2_blocked:
             blocker_msg = (
                 "Project is at GATE 2: BLOCKED ON LEARNER BASELINE.\n"
                 "TASK-030 requires administering the intake and baseline diagnostic forms "
@@ -527,7 +657,7 @@ EVIDENCE:
             }
 
         next_task_id, next_task_desc = pending_tasks[0]
-        # Grounded task candidate
+        # Grounded task candidate with explicit task scope
         content = f"""# Task: {next_task_id} — {next_task_desc.strip()}
 
 ## Metadata
@@ -540,7 +670,12 @@ EVIDENCE:
 Grounded task derived directly from docs/project/BACKLOG.md.
 {next_task_desc.strip()}
 
-## 2. Invariants & Scope
+## 2. Scope & Allowed Paths
+allowed_paths:
+  - docs/project/STATE.md
+allowed_path_prefixes:
+  - docs/
+
 - Respect all rules in AGENTS.md.
 - Zero secrets in repository.
 - Quality gate passing before handoff.
@@ -648,6 +783,43 @@ Ensure `bash scripts/quality_gate.sh` passes before completion.
             self.logger.error("No resulting_git_head recorded in state. Rejecting.")
             state["state"] = "ERROR"
             state["last_error"] = "resulting_git_head missing in AWAITING_AUDIT state."
+            self.save_state(state, expected_version=current_version)
+            return False
+
+        # =========================================================================
+        # CONTROL PLANE IMMUTABILITY GATE (Mandatory for EVERY task)
+        # =========================================================================
+        if not self.current_task_file.exists():
+            err_msg = "ControlPlaneIntegrityViolation: CURRENT_TASK.md is missing before audit."
+            self.logger.error(err_msg)
+            state["state"] = "ERROR"
+            state["last_error"] = err_msg
+            self.save_state(state, expected_version=current_version)
+            return False
+
+        actual_task_hash = self.compute_file_hash(self.current_task_file)
+        if expected_task_hash and actual_task_hash != expected_task_hash:
+            err_msg = (
+                f"ControlPlaneIntegrityViolation: CURRENT_TASK.md hash mismatch "
+                f"(expected {expected_task_hash}, actual {actual_task_hash}). "
+                "Task specification was altered after execution."
+            )
+            self.logger.error(err_msg)
+            state["state"] = "ERROR"
+            state["last_error"] = err_msg
+            self.save_state(state, expected_version=current_version)
+            return False
+
+        task_content = self.current_task_file.read_text(encoding="utf-8")
+        file_task_id = self.extract_task_id(task_content)
+        if file_task_id and file_task_id != task_id:
+            err_msg = (
+                f"ControlPlaneIntegrityViolation: task_id mismatch in CURRENT_TASK.md "
+                f"(file specifies '{file_task_id}', state specifies '{task_id}')."
+            )
+            self.logger.error(err_msg)
+            state["state"] = "ERROR"
+            state["last_error"] = err_msg
             self.save_state(state, expected_version=current_version)
             return False
 

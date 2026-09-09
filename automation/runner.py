@@ -36,8 +36,10 @@ from typing import Dict, Any, Optional, Tuple, List
 SECRET_PATTERNS = [
     re.compile(r"\bghp_[A-Za-z0-9_]{20,80}"),
     re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,90}"),
-    # Google AI / Gemini API keys (including modern 39-char format and standard formats)
+    # Google AI / Gemini API keys (standard AIza and modern 39-char format)
     re.compile(r"\bAIza[0-9A-Za-z-_]{30,50}"),
+    # Google AI Studio modern AQ.-style keys (bare tokens without assignment prefix)
+    re.compile(r"\bAQ\.[A-Za-z0-9_-]{20,90}"),
     # OpenAI formats (classic sk- and modern sk-proj-, sk-admin-)
     re.compile(r"\bsk-(?:proj-|admin-)?[A-Za-z0-9_-]{20,90}"),
     # Anthropic formats
@@ -85,6 +87,70 @@ def scan_text_for_secrets(text: str) -> Tuple[bool, str]:
         if pattern.search(text):
             return (True, f"Potential credential pattern detected (matched regex {pattern.pattern[:30]}...)")
     return (False, "")
+
+
+def parse_task_scope(task_text: str) -> Tuple[List[str], List[str]]:
+    """
+    Extracts allowed_paths and allowed_path_prefixes from task specification markdown.
+    Supports YAML-style block lists, inline lists, or markdown bullet items.
+    """
+    allowed_paths: List[str] = []
+    allowed_prefixes: List[str] = []
+
+    lines = task_text.splitlines()
+    current_section = None
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        clean_header = stripped.lower().replace("**", "").replace("-", "").strip()
+        if clean_header.startswith("allowed_paths:") or clean_header.startswith("allowed paths:"):
+            current_section = "paths"
+            inline_match = re.search(r"\[(.*?)\]", stripped)
+            if inline_match:
+                items = [it.strip().strip("'\"`") for it in inline_match.group(1).split(",") if it.strip()]
+                allowed_paths.extend(items)
+                current_section = None
+            continue
+        elif clean_header.startswith("allowed_path_prefixes:") or clean_header.startswith("allowed path prefixes:"):
+            current_section = "prefixes"
+            inline_match = re.search(r"\[(.*?)\]", stripped)
+            if inline_match:
+                items = [it.strip().strip("'\"`") for it in inline_match.group(1).split(",") if it.strip()]
+                allowed_prefixes.extend(items)
+                current_section = None
+            continue
+        elif stripped.startswith("#") or (":" in stripped and not stripped.startswith("-")):
+            current_section = None
+
+        if current_section == "paths":
+            if stripped.startswith("-"):
+                val = stripped.lstrip("-").strip().strip("'\"`")
+                if val:
+                    allowed_paths.append(val)
+        elif current_section == "prefixes":
+            if stripped.startswith("-"):
+                val = stripped.lstrip("-").strip().strip("'\"`")
+                if val:
+                    allowed_prefixes.append(val)
+
+    return allowed_paths, allowed_prefixes
+
+
+def is_path_in_scope(filepath: str, allowed_paths: List[str], allowed_prefixes: List[str]) -> bool:
+    """Checks whether a filepath matches explicit allowed paths or path prefixes."""
+    clean_fp = filepath.strip().lstrip("./")
+    for ap in allowed_paths:
+        clean_ap = ap.strip().lstrip("./")
+        if clean_fp == clean_ap:
+            return True
+    for pref in allowed_prefixes:
+        clean_pref = pref.strip().lstrip("./")
+        if clean_fp == clean_pref or clean_fp.startswith(clean_pref):
+            return True
+    return False
 
 
 class SafeLogger:
@@ -280,9 +346,14 @@ class OrchestrationRunner:
             return ""
 
     def is_git_clean(self) -> bool:
-        res = subprocess.check_output(["git", "status", "--porcelain"], cwd=self.repo_root, text=True)
+        res = subprocess.check_output(["git", "status", "--porcelain", "-uall"], cwd=self.repo_root, text=True)
         lines = [line.strip() for line in res.splitlines() if line.strip()]
         return len(lines) == 0
+
+    def is_git_index_clean(self) -> bool:
+        """Returns True if git staging index has no staged changes."""
+        res = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=self.repo_root)
+        return res.returncode == 0
 
     def load_history(self) -> List[Dict[str, str]]:
         if not self.history_file.exists():
@@ -309,20 +380,49 @@ class OrchestrationRunner:
             for h in history
         )
 
-    def get_changed_and_untracked_files(self) -> List[Tuple[str, str]]:
-        """Returns list of (status_code, file_path) from git status --porcelain."""
-        res = subprocess.check_output(["git", "status", "--porcelain"], cwd=self.repo_root, text=True)
+    def get_all_status_changes(self) -> List[Tuple[str, str, Optional[str]]]:
+        """
+        Returns list of (status, primary_filepath, old_filepath_if_rename).
+        Parses git status --porcelain -uall.
+        """
+        res = subprocess.check_output(["git", "status", "--porcelain", "-uall"], cwd=self.repo_root, text=True)
         items = []
         for line in res.splitlines():
             line_str = line.strip()
             if not line_str:
                 continue
             status = line[:2].strip()
-            filepath = line[3:].strip()
-            if " -> " in filepath:
-                filepath = filepath.split(" -> ")[1].strip()
-            items.append((status, filepath))
+            path_part = line[3:].strip()
+            if " -> " in path_part:
+                old_p, new_p = path_part.split(" -> ", 1)
+                items.append((status, new_p.strip(), old_p.strip()))
+            else:
+                items.append((status, path_part, None))
         return items
+
+    def get_changed_and_untracked_files(self) -> List[Tuple[str, str]]:
+        """Returns list of (status_code, file_path) from git status --porcelain."""
+        changes = self.get_all_status_changes()
+        return [(status, primary_p) for status, primary_p, _ in changes]
+
+    def verify_task_scope(self, task_content: str) -> Tuple[bool, List[str]]:
+        """
+        Machine-enforces task scope allowlist:
+        Compares ALL modified, untracked, deleted, or renamed files against
+        allowed_paths and allowed_path_prefixes.
+        For renames, checks BOTH source and destination paths.
+        """
+        allowed_paths, allowed_prefixes = parse_task_scope(task_content)
+        changes = self.get_all_status_changes()
+        violations = []
+
+        for status, primary_p, old_p in changes:
+            if not is_path_in_scope(primary_p, allowed_paths, allowed_prefixes):
+                violations.append(f"{primary_p} (status: {status})")
+            if old_p and not is_path_in_scope(old_p, allowed_paths, allowed_prefixes):
+                violations.append(f"{old_p} (rename source)")
+
+        return (len(violations) == 0, violations)
 
     def verify_protected_paths(self, maintenance_mode: bool = False) -> Tuple[bool, List[str]]:
         """Verifies that no protected paths are modified unless maintenance_mode is enabled."""
@@ -424,33 +524,37 @@ class OrchestrationRunner:
         branch = self.config.get("git_branch", "main")
         try:
             # 1. Collect exact changed and untracked files
-            changed_items = self.get_changed_and_untracked_files()
-            if not changed_items:
+            changes = self.get_all_status_changes()
+            if not changes:
                 self.logger.info("No modifications detected to deliver.")
                 head = self.get_git_head()
                 return (True, "No changes to deliver.", head)
 
             # 2. Validate paths against sensitive file rules and protected paths
-            for _, filepath in changed_items:
-                # Sensitive filename check
-                filename = Path(filepath).name
-                for sens_pat in SENSITIVE_FILENAME_PATTERNS:
-                    if sens_pat.match(filename):
-                        return (False, f"SecurityViolation: Sensitive file detected in working tree: {filepath}", None)
+            for _, primary_p, old_p in changes:
+                paths_to_check = [primary_p]
+                if old_p:
+                    paths_to_check.append(old_p)
+                for filepath in paths_to_check:
+                    filename = Path(filepath).name
+                    for sens_pat in SENSITIVE_FILENAME_PATTERNS:
+                        if sens_pat.match(filename):
+                            return (False, f"SecurityViolation: Sensitive file detected in working tree: {filepath}", None)
 
-                # Protected path check
-                if not maintenance_mode:
-                    for pp in PROTECTED_PATHS:
-                        if filepath == pp or filepath.startswith(pp):
-                            return (
-                                False,
-                                f"SecurityViolation: Protected path modification rejected without maintenance mode: {filepath}",
-                                None,
-                            )
+                    if not maintenance_mode:
+                        for pp in PROTECTED_PATHS:
+                            if filepath == pp or filepath.startswith(pp):
+                                return (
+                                    False,
+                                    f"SecurityViolation: Protected path modification rejected without maintenance mode: {filepath}",
+                                    None,
+                                )
 
             # 3. Stage ONLY validated explicit paths (True Selective Staging)
-            for _, filepath in changed_items:
-                subprocess.run(["git", "add", filepath], cwd=self.repo_root, check=True)
+            for _, primary_p, old_p in changes:
+                if old_p:
+                    subprocess.run(["git", "add", old_p], cwd=self.repo_root, check=True)
+                subprocess.run(["git", "add", primary_p], cwd=self.repo_root, check=True)
 
             # 4. Check if anything staged
             diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=self.repo_root)
@@ -594,6 +698,14 @@ class OrchestrationRunner:
                 self.save_state(state, expected_version=current_version)
                 return False
 
+            if not self.is_git_index_clean():
+                err_msg = "Git staged index is dirty before task execution."
+                self.logger.error(err_msg)
+                state["last_error"] = err_msg
+                state["state"] = "ERROR"
+                self.save_state(state, expected_version=current_version)
+                return False
+
             # Capture pre-execution repository baseline for containment verification
             pre_head = current_head
             pre_branch = self.get_git_branch()
@@ -640,6 +752,17 @@ class OrchestrationRunner:
             post_remotes = self.get_git_remotes()
             post_refs = self.get_git_refs_snapshot()
 
+            if not self.is_git_index_clean():
+                err_msg = "GitContainmentViolation: Executor modified Git staged index without runner authorization."
+                self.logger.error(err_msg)
+                subprocess.run(["git", "reset", "HEAD"], cwd=self.repo_root)
+                subprocess.run(["git", "checkout", "--", "."], cwd=self.repo_root)
+                subprocess.run(["git", "clean", "-fd"], cwd=self.repo_root)
+                state["last_error"] = err_msg
+                state["state"] = "ERROR"
+                self.save_state(state, expected_version=current_version)
+                return False
+
             if post_head != pre_head:
                 err_msg = f"GitContainmentViolation: Executor altered Git HEAD (pre: {pre_head}, post: {post_head})."
                 self.logger.error(err_msg)
@@ -675,7 +798,21 @@ class OrchestrationRunner:
                 self.save_state(state, expected_version=current_version)
                 return False
 
-            # 6. Protected Paths Scope Verification
+            # 6. Task Scope Verification (Machine-Enforceable Path Allowlist)
+            scope_ok, scope_violations = self.verify_task_scope(task_content)
+            if not scope_ok:
+                err_msg = f"ScopeViolation: Files modified outside task scope allowlist: {scope_violations}"
+                self.logger.error(err_msg)
+                subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=self.repo_root)
+                subprocess.run(["git", "clean", "-fd"], cwd=self.repo_root)
+                retry_count += 1
+                state["retry_count"] = retry_count
+                state["last_error"] = err_msg
+                state["state"] = "ERROR" if retry_count >= max_retries else "FIX_REQUIRED"
+                self.save_state(state, expected_version=current_version)
+                return False
+
+            # 7. Protected Paths Scope Verification (Strict Additional Layer)
             paths_ok, violations = self.verify_protected_paths(maintenance_mode)
             if not paths_ok:
                 err_msg = f"SecurityViolation: Protected paths modified without maintenance mode: {violations}"

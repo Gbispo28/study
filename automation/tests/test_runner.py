@@ -58,6 +58,19 @@ class TestSecretSanitization(unittest.TestCase):
         self.assertTrue(has_secret)
         self.assertNotIn("AIzaSy", msg)
 
+    def test_sanitize_fake_aq_style_google_ai_key(self):
+        """Verifies detection and sanitization of modern AQ.-style Google AI keys without assignment prefix."""
+        fake_aq_key = "AQ." + ("Z" * 36) + "AbCdEf1234567890"
+        raw = f"Processing request with credential {fake_aq_key} in environment"
+        clean = sanitize_text(raw)
+        self.assertNotIn("AQ.", clean)
+        self.assertIn("[REDACTED_SECRET]", clean)
+
+        has_secret, msg = scan_text_for_secrets(raw)
+        self.assertTrue(has_secret)
+        self.assertNotIn(fake_aq_key, msg)
+        self.assertNotIn("AbCdEf", msg)
+
     def test_sanitize_openai_and_anthropic_keys(self):
         fake_oai = "sk-proj-" + ("K" * 45)
         fake_ant = "sk-ant-" + ("M" * 45)
@@ -125,7 +138,7 @@ class TestOrchestrationRunnerCore(unittest.TestCase):
 
         self.state_file = self.cp_dir / "STATE.json"
         self.task_file = self.cp_dir / "CURRENT_TASK.md"
-        self.task_content = "# Test Task\nmaintenance_mode: false\nDo something safe."
+        self.task_content = "# Test Task\nmaintenance_mode: false\nallowed_paths:\n  - test_file.txt\nDo something safe."
         self.task_file.write_text(self.task_content, encoding="utf-8")
         self.task_hash = hashlib.sha256(self.task_content.encode("utf-8")).hexdigest()
 
@@ -555,6 +568,179 @@ class TestAutomatedAuditor(unittest.TestCase):
         self.assertTrue(len(lines) > 0)
         parsed = json.loads(lines[-1])
         self.assertEqual(parsed["event"], "TEST_EVENT")
+
+
+class TestTaskScopeAndIndexContainment(unittest.TestCase):
+    """Tests machine-enforceable task scope allowlists and technical index containment."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.repo_root = Path(self.temp_dir.name) / "repo"
+        self.repo_root.mkdir(parents=True)
+        init_git_repo(self.repo_root)
+
+        self.cp_dir = Path(self.temp_dir.name) / "external_control_plane"
+        self.cp_dir.mkdir(parents=True)
+
+        self.state_file = self.cp_dir / "STATE.json"
+        self.current_task_file = self.cp_dir / "CURRENT_TASK.md"
+
+        self.config = {
+            "control_plane_dir": str(self.cp_dir),
+            "max_retries": 3,
+            "poll_interval_seconds": 1,
+            "git_branch": "main",
+            "disable_git_push": True,
+        }
+        self.logger = SafeLogger()
+        self.runner = OrchestrationRunner(self.repo_root, self.config, self.logger)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def _setup_task(self, task_id: str, content: str):
+        self.current_task_file.write_text(content, encoding="utf-8")
+        task_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        head = self.runner.get_git_head()
+        state = {
+            "state": "READY",
+            "state_version": 1,
+            "task_id": task_id,
+            "expected_git_head": head,
+            "content_hash": task_hash,
+            "retry_count": 0,
+            "max_retries": 3,
+        }
+        self.state_file.write_text(json.dumps(state), encoding="utf-8")
+        return head
+
+    def test_executor_staged_index_mutation_rejected(self):
+        """Executor mutates Git staged index (git add without commit) -> GitContainmentViolation -> ERROR."""
+        task_content = """# Task: T-INDEX-MUTATION
+task_type: FEATURE
+maintenance_mode: false
+allowed_paths:
+  - test.txt
+"""
+        self._setup_task("T-INDEX-MUTATION", task_content)
+
+        def index_mutating_executor(prompt):
+            (self.repo_root / "test.txt").write_text("modified", encoding="utf-8")
+            subprocess.run(["git", "add", "test.txt"], cwd=self.repo_root, check=True)
+            return (True, "Staged file directly")
+
+        with patch.object(self.runner, "execute_agy", side_effect=index_mutating_executor):
+            res = self.runner.execute_task_cycle(dry_run=False)
+            self.assertFalse(res)
+            saved = self.runner.load_state()
+            self.assertEqual(saved["state"], "ERROR")
+            self.assertIn("GitContainmentViolation", saved["last_error"])
+            self.assertIn("staged index", saved["last_error"])
+            self.assertTrue(self.runner.is_git_index_clean())
+
+    def test_out_of_scope_normal_file_rejected(self):
+        """Executor creates file outside task scope allowlist -> ScopeViolation -> FIX_REQUIRED."""
+        task_content = """# Task: T-OUT-OF-SCOPE
+task_type: FEATURE
+maintenance_mode: false
+allowed_paths:
+  - docs/authorized.md
+"""
+        self._setup_task("T-OUT-OF-SCOPE", task_content)
+
+        def out_of_scope_executor(prompt):
+            docs_dir = self.repo_root / "docs"
+            docs_dir.mkdir(parents=True, exist_ok=True)
+            (docs_dir / "unauthorized.md").write_text("evil", encoding="utf-8")
+            return (True, "Wrote unauthorized file")
+
+        with patch.object(self.runner, "execute_agy", side_effect=out_of_scope_executor):
+            res = self.runner.execute_task_cycle(dry_run=False)
+            self.assertFalse(res)
+            saved = self.runner.load_state()
+            self.assertEqual(saved["state"], "FIX_REQUIRED")
+            self.assertIn("ScopeViolation", saved["last_error"])
+            self.assertIn("docs/unauthorized.md", saved["last_error"])
+            self.assertTrue(self.runner.is_git_clean())
+
+    def test_out_of_scope_deletion_rejected(self):
+        """Executor deletes an out-of-scope tracked file -> ScopeViolation -> FIX_REQUIRED."""
+        # Commit a file first
+        tracked = self.repo_root / "existing.txt"
+        tracked.write_text("existing content\n", encoding="utf-8")
+        subprocess.run(["git", "add", "existing.txt"], cwd=self.repo_root, check=True)
+        subprocess.run(["git", "commit", "-m", "chore: add existing.txt"], cwd=self.repo_root, check=True)
+
+        task_content = """# Task: T-DELETE-OUT-OF-SCOPE
+task_type: FEATURE
+maintenance_mode: false
+allowed_paths:
+  - other.txt
+"""
+        self._setup_task("T-DELETE-OUT-OF-SCOPE", task_content)
+
+        def deleting_executor(prompt):
+            tracked.unlink()
+            return (True, "Deleted tracked file")
+
+        with patch.object(self.runner, "execute_agy", side_effect=deleting_executor):
+            res = self.runner.execute_task_cycle(dry_run=False)
+            self.assertFalse(res)
+            saved = self.runner.load_state()
+            self.assertEqual(saved["state"], "FIX_REQUIRED")
+            self.assertIn("ScopeViolation", saved["last_error"])
+            self.assertIn("existing.txt", saved["last_error"])
+
+    def test_rename_checks_source_and_destination_scope(self):
+        """Rename with out-of-scope source file -> ScopeViolation -> FIX_REQUIRED."""
+        # Commit source file
+        src_file = self.repo_root / "unauthorized_source.txt"
+        src_file.write_text("source content\n", encoding="utf-8")
+        subprocess.run(["git", "add", "unauthorized_source.txt"], cwd=self.repo_root, check=True)
+        subprocess.run(["git", "commit", "-m", "chore: add source file"], cwd=self.repo_root, check=True)
+
+        task_content = """# Task: T-RENAME-SCOPE
+task_type: FEATURE
+maintenance_mode: false
+allowed_paths:
+  - authorized_destination.txt
+"""
+        self._setup_task("T-RENAME-SCOPE", task_content)
+
+        def rename_executor(prompt):
+            src_file.rename(self.repo_root / "authorized_destination.txt")
+            return (True, "Renamed file")
+
+        with patch.object(self.runner, "execute_agy", side_effect=rename_executor):
+            res = self.runner.execute_task_cycle(dry_run=False)
+            self.assertFalse(res)
+            saved = self.runner.load_state()
+            self.assertEqual(saved["state"], "FIX_REQUIRED")
+            self.assertIn("ScopeViolation", saved["last_error"])
+            self.assertIn("unauthorized_source.txt", saved["last_error"])
+
+    def test_maintenance_mode_does_not_bypass_task_scope(self):
+        """maintenance_mode: true does NOT grant unlimited repo access without allowed_paths."""
+        task_content = """# Task: T-MAINT-SCOPE
+task_type: INFRASTRUCTURE
+maintenance_mode: true
+allowed_paths:
+  - automation/runner.py
+"""
+        self._setup_task("T-MAINT-SCOPE", task_content)
+
+        def rogue_maint_executor(prompt):
+            # Tries to edit an out-of-scope file under the guise of maintenance mode
+            (self.repo_root / "arbitrary.txt").write_text("exploit", encoding="utf-8")
+            return (True, "Attempted out of scope write")
+
+        with patch.object(self.runner, "execute_agy", side_effect=rogue_maint_executor):
+            res = self.runner.execute_task_cycle(dry_run=False)
+            self.assertFalse(res)
+            saved = self.runner.load_state()
+            self.assertEqual(saved["state"], "FIX_REQUIRED")
+            self.assertIn("ScopeViolation", saved["last_error"])
+            self.assertIn("arbitrary.txt", saved["last_error"])
 
 
 if __name__ == "__main__":

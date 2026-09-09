@@ -322,6 +322,132 @@ class TestAuditorIntegration(unittest.TestCase):
         human_text = self.auditor.human_action_file.read_text(encoding="utf-8")
         self.assertIn("Administer Learner Baseline Diagnostic (TASK-030)", human_text)
 
+    def test_current_task_hash_changed_before_audit_rejected(self):
+        """CURRENT_TASK.md content altered after execution -> ControlPlaneIntegrityViolation -> ERROR."""
+        commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+        self.auditor.current_task_file.write_text("# Task: T-HASH-CHECK\nInitial content\n", encoding="utf-8")
+        initial_hash = self.auditor.compute_file_hash(self.auditor.current_task_file)
+
+        state = {
+            "state": "AWAITING_AUDIT",
+            "state_version": 2,
+            "task_id": "T-HASH-CHECK",
+            "execution_id": "exec-integrity-01",
+            "resulting_git_head": commit_sha,
+            "expected_git_head": commit_sha,
+            "content_hash": initial_hash,
+            "retry_count": 0,
+            "max_retries": 3,
+        }
+        self.auditor.state_file.write_text(json.dumps(state), encoding="utf-8")
+
+        # Mutate CURRENT_TASK.md before audit runs
+        self.auditor.current_task_file.write_text("# Task: T-HASH-CHECK\nTampered requirements!\n", encoding="utf-8")
+
+        res = self.auditor.execute_audit_cycle(standalone_promote=False)
+        self.assertFalse(res)
+        saved = self.auditor.load_state()
+        self.assertEqual(saved["state"], "ERROR")
+        self.assertIn("ControlPlaneIntegrityViolation", saved["last_error"])
+        self.assertIn("hash mismatch", saved["last_error"])
+
+    def test_current_task_task_id_mismatch_rejected(self):
+        """task_id in CURRENT_TASK.md does not match STATE.task_id -> ControlPlaneIntegrityViolation -> ERROR."""
+        commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+        self.auditor.current_task_file.write_text("# Task: T-ACTUAL-TASK\nContent\n", encoding="utf-8")
+        actual_hash = self.auditor.compute_file_hash(self.auditor.current_task_file)
+
+        state = {
+            "state": "AWAITING_AUDIT",
+            "state_version": 2,
+            "task_id": "T-DIFFERENT-TASK",
+            "execution_id": "exec-integrity-02",
+            "resulting_git_head": commit_sha,
+            "expected_git_head": commit_sha,
+            "content_hash": actual_hash,
+            "retry_count": 0,
+            "max_retries": 3,
+        }
+        self.auditor.state_file.write_text(json.dumps(state), encoding="utf-8")
+
+        res = self.auditor.execute_audit_cycle(standalone_promote=False)
+        self.assertFalse(res)
+        saved = self.auditor.load_state()
+        self.assertEqual(saved["state"], "ERROR")
+        self.assertIn("ControlPlaneIntegrityViolation", saved["last_error"])
+        self.assertIn("task_id mismatch", saved["last_error"])
+
+    def test_completed_task_030_and_gate_2_pass_allows_next_task(self):
+        """TASK-030 [x] and Gate 2 PASS -> must NOT return HUMAN_REQUIRED for learner baseline; proceeds to TASK-031."""
+        backlog_file = self.repo_root / "docs" / "project" / "BACKLOG.md"
+        state_file = self.repo_root / "docs" / "project" / "STATE.md"
+
+        # Write BACKLOG.md with TASK-030 checked and TASK-031 pending
+        backlog_file.write_text(
+            "# Backlog\n"
+            "- [x] **TASK-030 (GATING BLOCKER)**: Completed learner baseline intake and diagnostic scoring.\n"
+            "- [ ] **TASK-031**: Implement daily journey micro-scheduling.\n",
+            encoding="utf-8",
+        )
+        # Write STATE.md with Gate 2 passed and closed
+        state_file.write_text(
+            "# State\n"
+            "> **Gate 2 Decision**: `GATE 2: PASS`\n"
+            "- **Gate 2 Status**: `CLOSED` (Phase 02 Complete)\n",
+            encoding="utf-8",
+        )
+
+        plan = self.auditor.plan_next_operational_state("TASK-030")
+        self.assertEqual(plan["action"], "APPROVED")
+        self.assertEqual(plan["task_id"], "TASK-031")
+        self.assertNotIn("HUMAN_REQUIRED", plan["action"])
+
+    def test_unrelated_green_workflow_cannot_satisfy_required_ci(self):
+        """Unrelated successful workflow on same SHA cannot satisfy the required Repository Quality Gate."""
+        commit = "1234567890abcdef1234567890abcdef12345678"
+        # Mock gh run list returning successful runs for completely unrelated workflows
+        unrelated_runs = json.dumps([
+            {"status": "completed", "conclusion": "success", "name": "Deploy Docs to Pages", "databaseId": 7001},
+            {"status": "completed", "conclusion": "success", "workflowName": "Release Drafter", "databaseId": 7002},
+        ])
+        with patch("shutil.which", return_value="/usr/bin/gh"), \
+             patch("subprocess.run", return_value=subprocess.CompletedProcess([], 0, stdout=unrelated_runs, stderr="")):
+            ok, cat, msg = self.auditor.audit_ci_status(commit)
+            self.assertFalse(ok, "Unrelated successful workflows MUST NOT produce approval!")
+            self.assertEqual(cat, "PENDING")
+            self.assertIn("No required 'Repository Quality Gate' CI runs recorded", msg)
+
+    def test_auditor_repository_mutation_detected_and_rejected(self):
+        """Stage B detects if model or external boundary altered the repository, raising AUDITOR_CONTAINMENT_VIOLATION."""
+        pre_fp = {
+            "status": "",
+            "head": "sha111",
+            "branch": "main",
+            "refs": "refs/heads/main",
+            "index_clean": True,
+        }
+        # Simulate repository alteration during audit (e.g. dirty working tree or altered HEAD)
+        post_fp = {
+            "status": " M modified_file.py\n",
+            "head": "sha111",
+            "branch": "main",
+            "refs": "refs/heads/main",
+            "index_clean": False,
+        }
+
+        with patch.object(self.auditor, "get_repo_fingerprint", side_effect=[pre_fp, post_fp]), \
+             patch("subprocess.run", return_value=subprocess.CompletedProcess([], 0, stdout='{"response": "{\\"verdict\\": \\"APPROVED\\"}"}', stderr="")):
+
+            ok, res, err = self.auditor.execute_stage_b_model_audit(
+                task_content="task",
+                commit_sha="sha111",
+                changed_files=[],
+                diff_text="",
+                ci_summary="CI passing",
+            )
+            self.assertFalse(ok)
+            self.assertIn("AUDITOR_CONTAINMENT_VIOLATION", err)
+
 
 if __name__ == "__main__":
     unittest.main()

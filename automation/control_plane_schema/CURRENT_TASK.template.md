@@ -10,10 +10,16 @@
 ## 1. Context & Objective
 {{TASK_OBJECTIVE}}
 
-## 2. Scope & Invariants
+## 2. Scope & Allowed Paths
+<!-- Explicit machine-enforceable path allowlist. Modifications outside these paths are rejected. -->
+allowed_paths:
+  - {{ALLOWED_PATH_1}}
+allowed_path_prefixes:
+  - {{ALLOWED_PREFIX_1}}
+
 - Pedagogical Invariant: `GATE 2: BLOCKED ON LEARNER BASELINE` remains strictly preserved.
 - Zero secrets permitted.
-- Protected paths must NOT be modified unless `Maintenance Mode` is explicitly enabled.
+- Protected paths must NOT be modified unless `Maintenance Mode` is explicitly enabled AND path is in `allowed_paths`.
 
 ## 3. Detailed Requirements
 {{TASK_REQUIREMENTS}}
