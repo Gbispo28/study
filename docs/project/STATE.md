@@ -31,8 +31,7 @@
 | **Pedagogical Invariants** | Verified | [LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md) (Canonical pedagogical contract) |
 | **System Specification** | Verified | [LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md) (Master 18-section specification) |
 | **Product Requirements** | Verified | Updated [REQUIREMENTS.md](../product/REQUIREMENTS.md) reflecting audits and new confirmed requirements |
-| **Automation Control Plane** | Verified | [orchestration/ORCHESTRATION_POLICY.md](../../orchestration/ORCHESTRATION_POLICY.md), [automation/runner.py](../../automation/runner.py), Make blueprints (`automation/make/`), adversarial test suite |
-
+| **Automation Control Plane** | Verified | [ORCHESTRATION_POLICY.md](../../automation/control_plane_schema/ORCHESTRATION_POLICY.md), [runner.py](../../automation/runner.py), [auditor.py](../../automation/auditor.py), Make blueprints (`automation/make/`), 30-case adversarial test suite |
 
 ---
 
@@ -49,7 +48,8 @@
 - **DEC-009**: Phase 02 remains formally **OPEN** under `GATE 2: BLOCKED ON LEARNER BASELINE`. Phase 03 is locked until learner diagnostic data is submitted.
 - **DEC-010**: Assessment architecture strictly segregates learner surfaces (`docs/assessment/learner/`) from administrative surfaces (`docs/assessment/admin/`) to prevent test answer and audio script contamination.
 - **DEC-011**: The custom diagnostic battery operates under an explicit measurement ceiling at **B2**, reporting `ABOVE CURRENT INSTRUMENT CEILING` for advanced performances rather than making pseudo-psychometric C1/C2 claims.
-- **DEC-012**: Automation control plane is established with strict separation of concerns: GitHub is Source of Truth; Google Drive (`study/orchestration/`) is Message Bus; Make is Orchestrator; ChatGPT is External Auditor; MacBook local runner (`automation/runner.py`) operates via outbound polling without incoming open ports, leveraging native authenticated `agy` CLI.
+- **DEC-012**: Automation control plane separates Layer A (Git source code, schemas, tools) from Layer B (mutable runtime control plane on external Google Drive). Local runner (`automation/runner.py`) is exclusive Git Delivery Controller with protected path enforcement; Automated Auditor (`automation/auditor.py`) runs independently (`EXECUTOR != AUDITOR`) verifying real GitHub evidence; Make provides cloud coordination; ChatGPT acts as external strategic supervisor.
+
 
 
 ---

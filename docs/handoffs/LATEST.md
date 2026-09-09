@@ -16,18 +16,20 @@
   1. **Audited Environment & Tools**: Verified Python 3.14, Node 24, gh 2.92.0, gcloud 577.0.0, Google Drive Desktop actively mapping `study` to Folder ID `1N6BWV6xeIdwSzhSxj5YihN24nMe-cEKd`. Zero secrets exposed.
   2. **Antigravity CLI Verification**: Proved headless execution via `/Users/gmbispo/.local/bin/agy -p` with Google AI Pro subscription models (`gemini-3.8-flash-high`, `gemini-3.1-pro-high`, `claude-sonnet-4-6`), eliminating raw API key risks.
   3. **GCP Project Configuration**: Enabled both `generativelanguage.googleapis.com` (Gemini API) and `drive.googleapis.com` (Google Drive API) on project `english-learning-os-automation` (Project # 938125838515).
-  4. **Control Plane Message Bus**: Established `orchestration/` structure ([ORCHESTRATION_POLICY.md](../../orchestration/ORCHESTRATION_POLICY.md), `STATE.json`, `CURRENT_TASK.md`, `NEXT_TASK.md`, `EXECUTOR_HANDOFF.md`, `AUDIT_REPORT.md`, `HUMAN_ACTION_REQUIRED.md`).
-  5. **State Machine Protocol**: Formalized explicit 8-state machine (`READY`, `EXECUTING`, `AWAITING_AUDIT`, `FIX_REQUIRED`, `APPROVED`, `HUMAN_REQUIRED`, `COMPLETE`, `ERROR`).
-  6. **Outbound Local Runner**: Implemented [automation/runner.py](../../automation/runner.py) with PID concurrency lock, clean working tree validation, expected Git HEAD verification, `agy` headless execution, automated quality gate checking, atomic commit & push, handoff writing, and secret sanitization.
-  7. **Make Integration Blueprints**: Authored exportable Make JSON blueprints in `automation/make/` (`00_connection_test_blueprint.json` and `01_orchestrator_blueprint.json`).
-  8. **Adversarial Verification Suite**: Implemented and executed 11 test cases in `automation/tests/test_runner.py` (concurrency locking, stale lock recovery, head divergence detection, quality gate enforcement, retry exhaustion, and secret sanitization). 100% passing.
-  9. **Repository Integrity & Git Hygiene**: Zero secret leakage verified via `validate_repo.py` and `quality_gate.sh`.
+  4. **Control Plane Architecture**: Established Layer A versioned schemas ([ORCHESTRATION_POLICY.md](../../automation/control_plane_schema/ORCHESTRATION_POLICY.md), `STATE.schema.json`, templates) in Git and Layer B mutable control plane on external Google Drive (`English Learning OS Orchestration/`).
+  5. **State Machine Protocol**: Formalized explicit 8-state machine (`READY`, `EXECUTING`, `AWAITING_AUDIT`, `FIX_REQUIRED`, `APPROVED`, `HUMAN_REQUIRED`, `COMPLETE`, `ERROR`) with optimistic concurrency (`state_version`) and payload hashing (`content_hash`).
+  6. **Exclusive Git Delivery Controller**: Implemented [automation/runner.py](../../automation/runner.py) with protected paths enforcement, PID lock, secret sanitization, and automated quality gates.
+  7. **Independent Automated Auditor**: Implemented [automation/auditor.py](../../automation/auditor.py) (`EXECUTOR != AUDITOR`) auditing real GitHub commits, diffs, and CI runs, generating `NEXT_TASK.md` or corrective tasks.
+  8. **Make Integration Blueprints**: Authored exportable Make JSON blueprints in `automation/make/` (`00_connection_test_blueprint.json` and `01_orchestrator_blueprint.json`).
+  9. **30-Case Adversarial Suite**: Implemented and executed 30 test cases in `automation/tests/test_runner.py` (100% passing in 0.031s).
+  10. **Repository Integrity & Git Hygiene**: Zero runtime state in Git; working tree remains completely clean during state mutations.
 
 ---
 
 ## 2. Active Decisions & Governance Status
-- **DEC-012**: Automation control plane is operational. Local runner operates outbound-only with zero open ports.
+- **DEC-012**: Automation control plane separates Layer A (Git source code, schemas, tools) from Layer B (mutable runtime control plane on external Google Drive).
 - **Pedagogical Invariant**: Pedagogical architecture is untouched; Gate 2 remains strictly `GATE 2: BLOCKED ON LEARNER BASELINE`.
+
 - **Source of Truth**: GitHub `main` remains canonical. Drive is exclusively volatile control plane.
 
 ---

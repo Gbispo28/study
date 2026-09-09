@@ -1,126 +1,86 @@
-# English Learning OS — Automation Control Plane & Local Runner
+# English Learning OS — Automation Architecture & Control Plane
 
-> **Architecture Overview**: Autonomous, closed-loop collaboration between **ChatGPT (Auditor)**, **Gemini / Antigravity (Executor)**, **GitHub (Source of Truth)**, **Google Drive (Control Plane / Message Bus)**, and **Make (Orchestrator)**.
-
----
-
-## 1. System Architecture
-
-```
-[ChatGPT: Supervisor/Auditor] ──> Reviews Diff, CI & Approves ──> [Google Drive: Message Bus]
-                                                                        │
-                                                                        ▼
-                                                             [Make: Cloud Orchestrator]
-                                                                        │ (Watches STATE.json)
-                                                                        ▼
-[MacBook: Local Runner (runner.py)] <── Polls STATE.json ───────────────┘
-  │
-  ├── 1. Validates Git Cleanliness & expected_git_head
-  ├── 2. Executes Task via Antigravity CLI (`agy -p`)
-  ├── 3. Executes Quality Gate (`bash scripts/quality_gate.sh`)
-  ├── 4. Commits and Pushes to GitHub `main`
-  └── 5. Generates Handoff & transitions state to `AWAITING_AUDIT`
-```
+> **Architecture Overview**: Autonomous, closed-loop collaboration between **GitHub (Source of Truth)**, **Google Drive (External Control Plane)**, **Local Runner (Git Delivery Controller)**, **Automated Auditor**, and **Make (Cloud Coordinator)**, with **ChatGPT** serving as external strategic supervisor.
 
 ---
 
-## 2. Security & Zero-Secret Architecture
+## 1. Two-Layer Architecture
 
-1. **Outbound-Only Polling**: The local runner (`runner.py`) runs as a pure client. It opens zero network listening ports on the MacBook Air, presenting no ingress attack surface.
-2. **Subscription Authentication**: The local runner leverages the locally authenticated `/Users/gmbispo/.local/bin/agy` CLI, which authenticates via your Google AI Pro subscription without exposing raw API keys.
-3. **Secret Sanitization**: `runner.py` uses `SafeLogger` with regex filters to strip tokens (`ghp_`, `AIza`, `Bearer`, etc.) from console output and `automation/logs/runner.log`.
-4. **Git Hygiene**: Runtime states (`automation/logs/`, `automation/state/`, `automation/.lock`) are isolated in `.gitignore`.
+### Layer A: Versioned Source Code (GitHub `main`)
+- Canonical source of truth for code, tests, rules, and governance.
+- **Zero mutable runtime files**: Schemas and templates live in `automation/control_plane_schema/`. The repository working tree remains 100% clean during all state mutations.
 
----
-
-## 3. State Machine Protocol
-
-All state transitions are persisted in `orchestration/STATE.json`:
-
-| State | Role Responsible | Trigger / Description | Next Permitted State |
-| :--- | :--- | :--- | :--- |
-| **`READY`** | Orchestrator / Human | Task in `CURRENT_TASK.md` is ready for execution. | `EXECUTING` |
-| **`EXECUTING`** | Local Runner | Local runner acquired lock and is executing the task. | `AWAITING_AUDIT`, `FIX_REQUIRED`, `ERROR` |
-| **`AWAITING_AUDIT`** | Local Runner | Execution, quality gates, and git push succeeded. | `APPROVED`, `FIX_REQUIRED`, `HUMAN_REQUIRED` |
-| **`FIX_REQUIRED`** | Auditor (ChatGPT) | Auditor found deficiencies; returns with feedback. | `EXECUTING` |
-| **`APPROVED`** | Auditor (ChatGPT) | Auditor verified git diff and CI. Prompts task advancement. | `READY` (via Make promotion) |
-| **`HUMAN_REQUIRED`** | Any | Unavoidable human action needed (OAuth, 2FA, GUI click). | `READY` (after human completes) |
-| **`COMPLETE`** | Orchestrator | All planned tasks in current milestone are finished. | Terminal |
-| **`ERROR`** | Local Runner | Unrecoverable failure or `retry_count >= max_retries`. | Terminal (manual intervention) |
+### Layer B: Mutable Runtime Control Plane (Google Drive)
+- Resides outside the Git repository at `Google Drive/Meu Drive/English Learning OS Orchestration/` (or configured via `control_plane_dir`).
+- Contains:
+  - `STATE.json` (State machine status, optimistic version, content hash)
+  - `CURRENT_TASK.md` (Active task descriptor)
+  - `EXECUTOR_HANDOFF.md` (Executor report)
+  - `AUDIT_REPORT.md` (Automated auditor verdict)
+  - `NEXT_TASK.md` (Next task candidate)
+  - `HUMAN_ACTION_REQUIRED.md` (Human blocker queue)
+  - `EVENTS.ndjson` (Append-only event journal)
 
 ---
 
-## 4. How to Run the Local Runner
+## 2. Invariants & Security Perimeter
 
-### Option A: Manual / Single Run (Verification Mode)
+1. **Exclusive Git Delivery Controller**: The Antigravity executor (`agy`) is strictly prohibited from running Git commands. `runner.py` alone performs diff inspection, protected path checks, quality gates, atomic commits, and pushes.
+2. **Protected Paths**: The following paths cannot be modified by regular tasks:
+   - `automation/runner.py`
+   - `automation/auditor.py`
+   - `automation/control_plane_schema/`
+   - `scripts/quality_gate.sh`
+   - `scripts/validate_repo.py`
+   - `.agents/`
+   - `.github/workflows/`
+   Any regular task touching these paths is rejected (`SecurityViolation`). Edits require `maintenance_mode: true` in task metadata.
+3. **Payload-First / State-Last Protocol**: Payloads (`CURRENT_TASK.md`, `EXECUTOR_HANDOFF.md`) are written first, and their SHA-256 hash is verified against `STATE.json` before execution.
+4. **Optimistic Concurrency**: `STATE.json` uses `state_version` to prevent concurrent write collisions.
+5. **Auditor Independence (`EXECUTOR != AUDITOR`)**: The Automated Auditor uses a separate process and model (`gemini-3.1-pro-high` vs `gemini-3.8-flash-high`) and verifies real GitHub commits, diffs, and CI runs. The auditor cannot modify code.
+6. **Zero Inbound Ports**: Local runner and auditor run outbound-only with zero open network ports on macOS.
+
+---
+
+## 3. Operational Usage
+
+### Local Runner (`runner.py`)
 ```bash
 # Dry run: Inspect current task without modifying repository
 python3 automation/runner.py --dry-run
 
 # Single run: Execute the current task once and exit
 python3 automation/runner.py --once
-```
 
-### Option B: Continuous Background Poller (Daemon Mode)
-```bash
-# Run in background polling every 10 seconds
+# Continuous polling daemon:
 python3 automation/runner.py --daemon
+
+# Standalone mode (runs without Make):
+python3 automation/runner.py --standalone
 ```
 
-### Option C: macOS `launchd` Service (Persistent Background Runner)
-To keep the runner active automatically in macOS without an open terminal window:
+### Automated Auditor (`auditor.py`)
+```bash
+# Single audit check:
+python3 automation/auditor.py --once
 
-1. Copy the provided launchd plist (see template below) to `~/Library/LaunchAgents/com.englishlearningos.runner.plist`:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.englishlearningos.runner</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/opt/homebrew/bin/python3</string>
-        <string>/Users/gmbispo/Documents/Programação/study/automation/runner.py</string>
-        <string遮--daemon</string>
-    </array>
-    <key>WorkingDirectory</key>
-    <string>/Users/gmbispo/Documents/Programação/study</string>
-    <key>KeepAlive</key>
-    <true/>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/Users/gmbispo/Documents/Programação/study/automation/logs/launchd.stdout.log</string>
-    <key>StandardErrorPath</key>
-    <string>/Users/gmbispo/Documents/Programação/study/automation/logs/launchd.stderr.log</string>
-</dict>
-</plist>
-```
-2. Load the service:
-```bash
-launchctl load ~/Library/LaunchAgents/com.englishlearningos.runner.plist
-```
-3. Stop the service:
-```bash
-launchctl unload ~/Library/LaunchAgents/com.englishlearningos.runner.plist
+# Continuous audit daemon:
+python3 automation/auditor.py --daemon
+
+# Standalone promotion mode (promotes NEXT_TASK without Make):
+python3 automation/auditor.py --standalone
 ```
 
 ---
 
-## 5. Failure Recovery & Troubleshooting
+## 4. Disaster Recovery & Troubleshooting
 
-1. **Concurrency Lock Error (`Runner lock held`)**:
-   - If a previous runner crashed or was killed abruptly, run:
+1. **Stale Lock (`Runner lock held`)**:
+   - Detects inactive PID automatically. To manually clear:
    ```bash
    python3 automation/runner.py --force-unlock
    ```
-2. **Git Divergence Error (`Git HEAD divergence`)**:
-   - Occurs when the remote has new commits that the local repo does not have.
-   - Run `git pull --rebase origin main` and update `"expected_git_head"` in `orchestration/STATE.json`.
-3. **Quality Gate Failure**:
-   - Inspect `automation/logs/runner.log`.
-   - Run `bash scripts/quality_gate.sh` manually to pinpoint the failing test or git hygiene issue.
-4. **Emergency Stop**:
-   - Immediately change `"state": "HUMAN_REQUIRED"` in `orchestration/STATE.json`.
-   - All runners will pause execution on their next poll.
+2. **Git HEAD Divergence (`Git HEAD divergence`)**:
+   - Occurs if remote has new commits. Run `git pull --rebase origin main` and align `expected_git_head` in `STATE.json`.
+3. **Emergency Stop**:
+   - Set `"state": "HUMAN_REQUIRED"` in `STATE.json`. All runners and auditors will pause on next poll.

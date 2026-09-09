@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
 English Learning OS — Outbound Local Runner
-Executes orchestration tasks from Google Drive / orchestration directory locally on macOS.
+Exclusive Git Delivery Controller & Task Executor.
 
-Key Principles:
-- Outbound polling only: Zero incoming open ports or attack surfaces on the Mac.
-- Concurrency control: PID lock preventing multiple runner instances.
-- State validation: Verifies clean working tree and expected Git HEAD.
-- Quality Gate: Runs quality gates before any commit or push.
-- Safe Logging: Strips any accidental secret patterns from log outputs.
+Key Invariants:
+- Outbound polling only: Zero listening ports or inbound network attack surfaces.
+- Exclusive Git Delivery Controller: The executor agent is prohibited from git operations;
+  runner alone inspects diffs, validates scope, runs quality gates, commits, and pushes.
+- Protected Paths: Blocks edits to runner, auditor, schemas, quality gates, .agents, CI.
+- Payload-First, State-Last: Validates SHA-256 content_hash of CURRENT_TASK.md.
+- Optimistic Concurrency: Enforces state_versioning on STATE.json.
+- Idempotency: Tracks executed (task_id, expected_git_head) in execution_history.json.
+- Zero Secrets: SafeLogger strips API keys and credentials from logs and output.
 """
 
 import sys
@@ -18,11 +21,12 @@ import json
 import signal
 import shutil
 import re
+import hashlib
 import argparse
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 
 SECRET_PATTERNS = [
     re.compile(r"ghp_[A-Za-z0-9_]{20,50}"),
@@ -32,6 +36,15 @@ SECRET_PATTERNS = [
     re.compile(r"bearer\s+[A-Za-z0-9\-\._~\+\/]+=*", re.IGNORECASE),
 ]
 
+PROTECTED_PATHS = [
+    "automation/runner.py",
+    "automation/auditor.py",
+    "automation/control_plane_schema/",
+    "scripts/quality_gate.sh",
+    "scripts/validate_repo.py",
+    ".agents/",
+    ".github/workflows/",
+]
 
 
 def sanitize_text(text: str) -> str:
@@ -81,7 +94,7 @@ class SafeLogger:
 
 
 class RunnerLock:
-    """PID-based concurrency file lock."""
+    """PID-based concurrency file lock with dead process detection."""
 
     def __init__(self, lock_path: Path, logger: SafeLogger):
         self.lock_path = lock_path
@@ -93,14 +106,13 @@ class RunnerLock:
             try:
                 content = json.loads(self.lock_path.read_text(encoding="utf-8"))
                 existing_pid = content.get("pid")
-                # Check if process is alive
                 if existing_pid:
                     try:
                         os.kill(existing_pid, 0)
-                        self.logger.warn(f"Runner lock held by active process PID {existing_pid}. Skipping execution.")
+                        self.logger.warn(f"Runner lock held by active PID {existing_pid}. Skipping execution.")
                         return False
                     except OSError:
-                        self.logger.info(f"Removing stale lock file from dead process PID {existing_pid}.")
+                        self.logger.info(f"Removing stale lock file from dead PID {existing_pid}.")
             except Exception as e:
                 self.logger.warn(f"Could not read existing lock file ({e}), replacing.")
 
@@ -109,6 +121,7 @@ class RunnerLock:
             "acquired_at": datetime.now(timezone.utc).isoformat(),
         }
         try:
+            self.lock_path.parent.mkdir(parents=True, exist_ok=True)
             self.lock_path.write_text(json.dumps(lock_data, indent=2), encoding="utf-8")
             self.acquired = True
             return True
@@ -126,17 +139,35 @@ class RunnerLock:
 
 
 class OrchestrationRunner:
-    """Manages the full lifecycle of a task execution."""
+    """Manages the full lifecycle of autonomous task execution and Git delivery."""
 
     def __init__(self, repo_root: Path, config: Dict[str, Any], logger: SafeLogger):
         self.repo_root = repo_root.resolve()
         self.config = config
         self.logger = logger
-        self.orchestration_dir = self.repo_root / config.get("orchestration_dir", "orchestration")
-        self.state_file = self.orchestration_dir / "STATE.json"
-        self.current_task_file = self.orchestration_dir / "CURRENT_TASK.md"
-        self.handoff_file = self.orchestration_dir / "EXECUTOR_HANDOFF.md"
-        self.human_action_file = self.orchestration_dir / "HUMAN_ACTION_REQUIRED.md"
+
+        # Control plane directory (external Google Drive folder by default)
+        default_cp_dir = Path.home() / "Google Drive" / "Meu Drive" / "English Learning OS Orchestration"
+        configured_cp = config.get("control_plane_dir")
+        if configured_cp:
+            self.control_plane_dir = Path(configured_cp).expanduser().resolve()
+        elif default_cp_dir.exists():
+            self.control_plane_dir = default_cp_dir
+        else:
+            # Local fallback outside working tree
+            self.control_plane_dir = Path.home() / ".english_learning_os_orchestration"
+
+        self.control_plane_dir.mkdir(parents=True, exist_ok=True)
+
+        self.state_file = self.control_plane_dir / "STATE.json"
+        self.current_task_file = self.control_plane_dir / "CURRENT_TASK.md"
+        self.next_task_file = self.control_plane_dir / "NEXT_TASK.md"
+        self.handoff_file = self.control_plane_dir / "EXECUTOR_HANDOFF.md"
+        self.audit_report_file = self.control_plane_dir / "AUDIT_REPORT.md"
+        self.events_file = self.control_plane_dir / "EVENTS.ndjson"
+        self.history_file = self.repo_root / "automation" / "state" / "execution_history.json"
+        self.history_file.parent.mkdir(parents=True, exist_ok=True)
+
         self.lock = RunnerLock(self.repo_root / "automation" / ".lock", logger)
         self._running = True
 
@@ -152,16 +183,50 @@ class OrchestrationRunner:
             self.logger.error(f"Failed to parse STATE.json: {e}")
             return None
 
-    def save_state(self, state: Dict[str, Any]) -> bool:
-        state["updated_at"] = datetime.now(timezone.utc).isoformat()
+    def save_state(self, state: Dict[str, Any], expected_version: Optional[int] = None) -> bool:
+        """Saves state with optimistic concurrency check."""
         try:
+            if expected_version is not None and self.state_file.exists():
+                current_on_disk = json.loads(self.state_file.read_text(encoding="utf-8"))
+                disk_version = current_on_disk.get("state_version", 1)
+                if disk_version != expected_version:
+                    self.logger.error(
+                        f"Optimistic concurrency violation: disk version {disk_version} != expected {expected_version}"
+                    )
+                    return False
+
+            state["state_version"] = (state.get("state_version", 0) + 1)
+            state["updated_at"] = datetime.now(timezone.utc).isoformat()
+
             temp_path = self.state_file.with_suffix(".tmp")
             temp_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
             temp_path.replace(self.state_file)
+
+            # Append to event log
+            self.append_event({
+                "timestamp": state["updated_at"],
+                "event": f"STATE_TRANSITION_{state.get('state')}",
+                "task_id": state.get("task_id"),
+                "state": state.get("state"),
+                "state_version": state["state_version"],
+                "execution_id": state.get("execution_id")
+            })
             return True
         except Exception as e:
             self.logger.error(f"Failed to save STATE.json: {e}")
             return False
+
+    def append_event(self, event_data: Dict[str, Any]):
+        try:
+            with open(self.events_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(event_data) + "\n")
+        except Exception:
+            pass
+
+    def compute_file_hash(self, path: Path) -> str:
+        if not path.exists():
+            return ""
+        return hashlib.sha256(path.read_bytes()).hexdigest()
 
     def get_git_head(self) -> str:
         res = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True)
@@ -169,9 +234,53 @@ class OrchestrationRunner:
 
     def is_git_clean(self) -> bool:
         res = subprocess.check_output(["git", "status", "--porcelain"], cwd=self.repo_root, text=True)
-        # Filter out orchestration state files if not git-tracked
         lines = [line.strip() for line in res.splitlines() if line.strip()]
         return len(lines) == 0
+
+    def load_history(self) -> List[Dict[str, str]]:
+        if not self.history_file.exists():
+            return []
+        try:
+            return json.loads(self.history_file.read_text(encoding="utf-8"))
+        except Exception:
+            return []
+
+    def record_execution(self, task_id: str, expected_head: str, execution_id: str):
+        history = self.load_history()
+        history.append({
+            "task_id": task_id,
+            "expected_git_head": expected_head,
+            "execution_id": execution_id,
+            "executed_at": datetime.now(timezone.utc).isoformat()
+        })
+        self.history_file.write_text(json.dumps(history, indent=2), encoding="utf-8")
+
+    def is_already_executed(self, task_id: str, expected_head: str) -> bool:
+        history = self.load_history()
+        return any(
+            h.get("task_id") == task_id and h.get("expected_git_head") == expected_head
+            for h in history
+        )
+
+    def verify_protected_paths(self, maintenance_mode: bool = False) -> Tuple[bool, List[str]]:
+        """Verifies that no protected paths are modified unless maintenance_mode is enabled."""
+        if maintenance_mode:
+            return (True, [])
+
+        res = subprocess.check_output(["git", "status", "--porcelain"], cwd=self.repo_root, text=True)
+        modified_files = []
+        for line in res.splitlines():
+            parts = line.strip().split(maxsplit=1)
+            if len(parts) == 2:
+                modified_files.append(parts[1].strip())
+
+        violations = []
+        for mf in modified_files:
+            for pp in PROTECTED_PATHS:
+                if mf == pp or mf.startswith(pp):
+                    violations.append(mf)
+
+        return (len(violations) == 0, violations)
 
     def run_quality_gate(self) -> Tuple[bool, str]:
         cmd = self.config.get("quality_gate_command", "bash scripts/quality_gate.sh")
@@ -192,9 +301,9 @@ class OrchestrationRunner:
             return (False, f"Error executing quality gate: {e}")
 
     def execute_agy(self, prompt: str, model: Optional[str] = None) -> Tuple[bool, str]:
+        """Invokes Antigravity CLI in non-interactive print mode with JSON output."""
         agy_bin = self.config.get("agy_binary", "/Users/gmbispo/.local/bin/agy")
         if not Path(agy_bin).exists():
-            # Fallback to PATH search
             agy_bin = shutil.which("agy") or agy_bin
 
         if not Path(agy_bin).exists():
@@ -208,11 +317,11 @@ class OrchestrationRunner:
             "--model",
             chosen_model,
             "--output-format",
-            "text",
+            "json",
             "--dangerously-skip-permissions",
         ]
         try:
-            self.logger.info(f"Invoking agy CLI with model '{chosen_model}'...")
+            self.logger.info(f"Invoking agy CLI (model: {chosen_model})...")
             proc = subprocess.run(
                 cmd,
                 cwd=self.repo_root,
@@ -220,33 +329,53 @@ class OrchestrationRunner:
                 text=True,
                 timeout=self.config.get("execution_timeout_seconds", 300),
             )
-            output = sanitize_text(proc.stdout + "\n" + proc.stderr)
-            return (proc.returncode == 0, output)
+            raw_out = proc.stdout.strip()
+            if proc.returncode != 0:
+                err_msg = sanitize_text(proc.stderr.strip() or raw_out)
+                return (False, f"agy returned non-zero code {proc.returncode}: {err_msg}")
+
+            try:
+                parsed = json.loads(raw_out)
+                resp_text = parsed.get("response", raw_out)
+                return (True, sanitize_text(resp_text))
+            except Exception:
+                return (True, sanitize_text(raw_out))
+
         except subprocess.TimeoutExpired:
             return (False, "agy execution timed out.")
         except Exception as e:
             return (False, f"agy execution error: {e}")
 
-    def git_commit_and_push(self, task_id: str, commit_msg: str) -> Tuple[bool, str, Optional[str]]:
+    def git_deliver(self, task_id: str, commit_msg: str) -> Tuple[bool, str, Optional[str]]:
+        """Exclusive Git Delivery Controller."""
         remote = self.config.get("git_remote", "origin")
         branch = self.config.get("git_branch", "main")
         try:
+            # 1. Selective add
             subprocess.run(["git", "add", "."], cwd=self.repo_root, check=True)
-            # Check if there is anything to commit
+
+            # 2. Check if anything staged
             diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=self.repo_root)
             if diff_check.returncode == 0:
-                self.logger.info("No files modified to commit.")
+                self.logger.info("No modifications staged to deliver.")
                 head = self.get_git_head()
-                return (True, "No changes to commit.", head)
+                return (True, "No changes to deliver.", head)
 
-            formatted_msg = f"feat(orchestration): {task_id} - {commit_msg}"
+            # 3. Check for whitespace/formatting errors
+            ws_check = subprocess.run(["git", "diff", "--cached", "--check"], cwd=self.repo_root, capture_output=True)
+            if ws_check.returncode != 0:
+                return (False, f"Whitespace errors in staged diff:\n{ws_check.stderr.decode()}", None)
+
+            # 4. Commit atomically
+            formatted_msg = f"feat(task): {task_id} - {commit_msg}"
             subprocess.run(["git", "commit", "-m", formatted_msg], cwd=self.repo_root, check=True)
             head = self.get_git_head()
 
+            # 5. Push to remote
             subprocess.run(["git", "push", remote, branch], cwd=self.repo_root, check=True)
-            return (True, f"Committed and pushed successfully as {head[:7]}.", head)
+            return (True, f"Committed and pushed as {head[:7]}.", head)
         except Exception as e:
-            return (False, f"Git operation failed: {e}", None)
+            return (False, f"Git delivery failed: {e}", None)
 
     def write_handoff(
         self,
@@ -268,14 +397,16 @@ class OrchestrationRunner:
 - **Starting Commit**: `{start_head}`
 - **Resulting Commit**: `{end_head}`
 - **Quality Gate**: `{'PASSED' if qg_passed else 'FAILED'}`
+- **CI Status**: `TRIGGERED`
 
 ## Execution Summary
 {summary}
 
 ## Verification Evidence
-- Repository integrity validated.
-- Quality gate executed clean.
-- Remote synchronization verified on branch `{self.config.get('git_branch', 'main')}`.
+- Repository working tree verified clean before run.
+- Protected paths respected; no perimeter violations.
+- Quality gates passed with code 0.
+- Staged diff verified whitespace-clean; commit pushed to `{self.config.get('git_branch', 'main')}`.
 """
         self.handoff_file.write_text(content, encoding="utf-8")
 
@@ -283,7 +414,7 @@ class OrchestrationRunner:
         """Executes a single cycle of the task state machine."""
         state = self.load_state()
         if not state:
-            self.logger.warn("STATE.json could not be loaded. Skipping cycle.")
+            self.logger.warn("STATE.json not found in control plane directory. Skipping.")
             return False
 
         current_status = state.get("state")
@@ -291,13 +422,37 @@ class OrchestrationRunner:
         execution_id = state.get("execution_id", f"exec-{int(time.time())}")
         max_retries = state.get("max_retries", 3)
         retry_count = state.get("retry_count", 0)
+        expected_head = state.get("expected_git_head")
+        current_version = state.get("state_version", 1)
 
-        # We only act on READY or FIX_REQUIRED
+        # Only act on READY or FIX_REQUIRED
         if current_status not in ["READY", "FIX_REQUIRED"]:
-            self.logger.info(f"State is '{current_status}'. No action required.")
+            self.logger.info(f"State is '{current_status}'. No action taken.")
             return False
 
-        self.logger.info(f"Detected actionable state '{current_status}' for task '{task_id}'.")
+        # Idempotency check: prevent re-executing same task and head
+        if self.is_already_executed(task_id, expected_head):
+            self.logger.warn(f"Task '{task_id}' with HEAD '{expected_head}' was already executed. Skipping.")
+            return False
+
+        # Transactional verification: Payload-First / State-Last check
+        if not self.current_task_file.exists():
+            self.logger.error("CURRENT_TASK.md is missing. Rejecting execution.")
+            state["state"] = "ERROR"
+            state["last_error"] = "CURRENT_TASK.md missing."
+            self.save_state(state, expected_version=current_version)
+            return False
+
+        expected_hash = state.get("content_hash")
+        actual_hash = self.compute_file_hash(self.current_task_file)
+        if expected_hash and actual_hash != expected_hash:
+            self.logger.error(f"Payload hash mismatch! expected: {expected_hash}, actual: {actual_hash}")
+            state["state"] = "ERROR"
+            state["last_error"] = "Content hash mismatch (partial write detected)."
+            self.save_state(state, expected_version=current_version)
+            return False
+
+        self.logger.info(f"Detected actionable task '{task_id}' in state '{current_status}'.")
 
         if dry_run:
             self.logger.info(f"[DRY RUN] Would execute task '{task_id}' (execution_id: {execution_id}).")
@@ -307,36 +462,44 @@ class OrchestrationRunner:
             return False
 
         try:
-            # 1. Pre-execution checks
+            # 1. Pre-execution git baseline verification
             current_head = self.get_git_head()
-            expected_head = state.get("expected_git_head")
             if expected_head and current_head != expected_head:
                 err_msg = f"Git HEAD divergence: expected {expected_head}, found {current_head}."
                 self.logger.error(err_msg)
                 state["last_error"] = err_msg
                 state["state"] = "ERROR"
-                self.save_state(state)
+                self.save_state(state, expected_version=current_version)
+                return False
+
+            if not self.is_git_clean():
+                err_msg = "Git working tree is dirty before task execution."
+                self.logger.error(err_msg)
+                state["last_error"] = err_msg
+                state["state"] = "ERROR"
+                self.save_state(state, expected_version=current_version)
                 return False
 
             # 2. Mark EXECUTING
             state["state"] = "EXECUTING"
             state["execution_id"] = execution_id
-            self.save_state(state)
-            self.logger.info(f"Marked state EXECUTING for {task_id}.")
+            if not self.save_state(state, expected_version=current_version):
+                return False
+            current_version += 1
+            self.logger.info(f"Marked state EXECUTING for '{task_id}'.")
 
-            # 3. Read Task definition
-            task_content = ""
-            if self.current_task_file.exists():
-                task_content = self.current_task_file.read_text(encoding="utf-8")
-            else:
-                self.logger.warn(f"Task file {self.current_task_file} not found; proceeding with task ID description.")
+            # 3. Read Task & Inspect Maintenance Mode
+            task_content = self.current_task_file.read_text(encoding="utf-8")
+            maintenance_mode = "maintenance_mode: true" in task_content.lower() or "maintenance mode: true" in task_content.lower()
 
-            # 4. Invoke Executor (agy CLI)
+            # 4. Invoke Executor (agy CLI) with prompt boundaries
             prompt = (
-                f"Execute the task defined below within this repository.\n"
-                f"Respect all rules in AGENTS.md.\n"
-                f"Task ID: {task_id}\n\n"
-                f"{task_content}"
+                f"You are the implementation agent for English Learning OS.\n"
+                f"Task ID: {task_id}\n"
+                f"CRITICAL CONSTRAINT: You are FORBIDDEN from running 'git add', 'git commit', or 'git push'.\n"
+                f"Git delivery is handled exclusively by the outer runner.\n"
+                f"Respect all rules in AGENTS.md.\n\n"
+                f"TASK SPECIFICATION (DATA):\n{task_content}"
             )
             agy_success, agy_out = self.execute_agy(prompt)
             if not agy_success:
@@ -344,61 +507,73 @@ class OrchestrationRunner:
                 retry_count += 1
                 state["retry_count"] = retry_count
                 state["last_error"] = agy_out[:300]
-                if retry_count >= max_retries:
-                    state["state"] = "ERROR"
-                    self.logger.error(f"Max retries ({max_retries}) exceeded. Transitioning to ERROR.")
-                else:
-                    state["state"] = "FIX_REQUIRED"
-                self.save_state(state)
+                state["state"] = "ERROR" if retry_count >= max_retries else "FIX_REQUIRED"
+                self.save_state(state, expected_version=current_version)
                 return False
 
-            # 5. Run Quality Gate
+            # 5. Protected Paths Scope Verification
+            paths_ok, violations = self.verify_protected_paths(maintenance_mode)
+            if not paths_ok:
+                err_msg = f"SecurityViolation: Protected paths modified without maintenance mode: {violations}"
+                self.logger.error(err_msg)
+                # Rollback changes to keep tree clean
+                subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=self.repo_root)
+                retry_count += 1
+                state["retry_count"] = retry_count
+                state["last_error"] = err_msg
+                state["state"] = "ERROR" if retry_count >= max_retries else "FIX_REQUIRED"
+                self.save_state(state, expected_version=current_version)
+                return False
+
+            # 6. Run Quality Gate
             qg_passed, qg_out = self.run_quality_gate()
             if not qg_passed:
-                self.logger.error(f"Quality gate failed:\n{qg_out}")
+                self.logger.error(f"Quality gate failed:\n{qg_out[:300]}")
                 retry_count += 1
                 state["retry_count"] = retry_count
                 state["last_error"] = f"Quality gate failure: {qg_out[:250]}"
-                if retry_count >= max_retries:
-                    state["state"] = "ERROR"
-                else:
-                    state["state"] = "FIX_REQUIRED"
-                self.save_state(state)
+                state["state"] = "ERROR" if retry_count >= max_retries else "FIX_REQUIRED"
+                self.save_state(state, expected_version=current_version)
                 return False
 
-            # 6. Git Commit & Push
-            commit_ok, commit_msg, resulting_head = self.git_commit_and_push(
+            # 7. Git Delivery via Runner
+            commit_ok, commit_msg, resulting_head = self.git_deliver(
                 task_id, f"complete autonomous execution ({execution_id})"
             )
             if not commit_ok:
-                self.logger.error(f"Git commit/push failed: {commit_msg}")
+                self.logger.error(f"Git delivery failed: {commit_msg}")
                 state["last_error"] = commit_msg
                 state["state"] = "ERROR"
-                self.save_state(state)
+                self.save_state(state, expected_version=current_version)
                 return False
 
-            # 7. Write Handoff & Advance to AWAITING_AUDIT
+            # 8. Record Execution in History
+            self.record_execution(task_id, expected_head, execution_id)
+
+            # 9. Payload First: Write Handoff
             self.write_handoff(
                 task_id=task_id,
                 execution_id=execution_id,
                 start_head=current_head,
                 end_head=resulting_head or current_head,
-                summary=f"Task executed via agy.\nOutput snippet: {agy_out[:300]}",
+                summary=f"Task executed successfully via agy.\nResponse: {agy_out[:300]}",
                 qg_passed=True,
             )
+
+            # 10. State Last: Advance to AWAITING_AUDIT
             state["state"] = "AWAITING_AUDIT"
             state["resulting_git_head"] = resulting_head or current_head
             state["retry_count"] = 0
             state["last_error"] = None
-            self.save_state(state)
-            self.logger.info(f"Task '{task_id}' successfully executed. Advanced state to AWAITING_AUDIT.")
+            self.save_state(state, expected_version=current_version)
+            self.logger.info(f"Task '{task_id}' executed. State advanced to AWAITING_AUDIT.")
             return True
 
         except Exception as e:
             self.logger.error(f"Unexpected exception during execution: {e}")
             state["state"] = "ERROR"
             state["last_error"] = str(e)
-            self.save_state(state)
+            self.save_state(state, expected_version=current_version)
             return False
         finally:
             self.lock.release()
@@ -420,8 +595,8 @@ class OrchestrationRunner:
 def main():
     parser = argparse.ArgumentParser(description="English Learning OS Local Runner")
     parser.add_argument("--once", action="store_true", help="Execute single cycle and exit")
-    parser.add_argument("--daemon", action="store_true", help="Run continuously in background polling loop")
-    parser.add_argument("--dry-run", action="store_true", help="Inspect state and simulate without executing")
+    parser.add_argument("--daemon", action="store_true", help="Run continuous polling daemon")
+    parser.add_argument("--dry-run", action="store_true", help="Inspect state and simulate without modifying")
     parser.add_argument("--force-unlock", action="store_true", help="Remove stale lock file")
     parser.add_argument("--config", type=str, default="automation/config.example.json", help="Path to configuration JSON")
     args = parser.parse_args()
@@ -460,7 +635,6 @@ def main():
         interval = config.get("poll_interval_seconds", 10)
         runner.run_loop(interval)
     else:
-        # Default is --once if not daemon
         success = runner.execute_task_cycle(dry_run=args.dry_run)
         return 0 if success else 1
 

@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ControlPlaneState",
+  "description": "Schema for runtime STATE.json in the external Google Drive control plane.",
+  "type": "object",
+  "required": [
+    "state",
+    "state_version",
+    "execution_id",
+    "task_id",
+    "created_at",
+    "updated_at",
+    "retry_count",
+    "max_retries",
+    "expected_git_head",
+    "gate_status"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "READY",
+        "EXECUTING",
+        "AWAITING_AUDIT",
+        "FIX_REQUIRED",
+        "APPROVED",
+        "HUMAN_REQUIRED",
+        "COMPLETE",
+        "ERROR"
+      ]
+    },
+    "state_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Monotonically increasing version number for optimistic concurrency."
+    },
+    "execution_id": {
+      "type": "string",
+      "description": "Unique UUID/timestamp identifying this specific run."
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Immutable identifier for the current task."
+    },
+    "parent_task_id": {
+      "type": ["string", "null"],
+      "description": "Identifier of parent task if this is a corrective retry."
+    },
+    "content_hash": {
+      "type": ["string", "null"],
+      "description": "SHA-256 hash of CURRENT_TASK.md ensuring payload-first consistency."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_retries": {
+      "type": "integer",
+      "default": 3
+    },
+    "expected_git_head": {
+      "type": "string",
+      "description": "Required starting Git commit SHA before execution."
+    },
+    "resulting_git_head": {
+      "type": ["string", "null"],
+      "description": "Resulting Git commit SHA pushed to remote."
+    },
+    "gate_status": {
+      "type": "string",
+      "description": "Active milestone / pedagogical gate status."
+    },
+    "last_error": {
+      "type": ["string", "null"]
+    }
+  }
+}
