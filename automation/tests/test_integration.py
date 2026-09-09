@@ -11,6 +11,7 @@ Validates real filesystem and git interactions in temporary isolated repositorie
 """
 
 import os
+import sys
 import json
 import shutil
 import tempfile
@@ -419,6 +420,7 @@ class TestAuditorIntegration(unittest.TestCase):
 
     def test_auditor_repository_mutation_detected_and_rejected(self):
         """Stage B detects if model or external boundary altered the repository, raising AUDITOR_CONTAINMENT_VIOLATION."""
+        self.auditor.config["agy_binary"] = sys.executable
         pre_fp = {
             "status": "",
             "head": "sha111",
