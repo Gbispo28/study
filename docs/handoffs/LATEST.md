@@ -1,40 +1,44 @@
 # Latest Session Handoff
 
-> **Session**: Automation Control Plane & Local Runner Bootstrap<br>
+> **Session**: Automation Hardening & Autonomy Containment<br>
 > **Timestamp**: 2026-09-08<br>
 > **Branch**: `main`<br>
 > **Gate 2 Status**: `GATE 2: BLOCKED ON LEARNER BASELINE`<br>
 > **Phase 02 Status**: **OPEN / IN PROGRESS** (Pedagogical Specification Hardened — Baseline Administration Pending)<br>
 > **Phase 03 Status**: **LOCKED** (Pending Learner Baseline Assessment)<br>
-> **Starting Commit**: `d7b0ccb`<br>
+> **Starting Commit**: `206559c`<br>
 > **Current HEAD**: Resolve dynamically at runtime with `git rev-parse HEAD`
 
 ---
 
 ## 1. Accomplished in This Session
-- Bootstrapped autonomous automation control plane connecting ChatGPT (Auditor), Gemini/Antigravity (Executor), GitHub (Source of Truth), Google Drive (Message Bus), and Make (Orchestrator):
-  1. **Audited Environment & Tools**: Verified Python 3.14, Node 24, gh 2.92.0, gcloud 577.0.0, Google Drive Desktop actively mapping `study` to Folder ID `1N6BWV6xeIdwSzhSxj5YihN24nMe-cEKd`. Zero secrets exposed.
-  2. **Antigravity CLI Verification**: Proved headless execution via `/Users/gmbispo/.local/bin/agy -p` with Google AI Pro subscription models (`gemini-3.8-flash-high`, `gemini-3.1-pro-high`, `claude-sonnet-4-6`), eliminating raw API key risks.
-  3. **GCP Project Configuration**: Enabled both `generativelanguage.googleapis.com` (Gemini API) and `drive.googleapis.com` (Google Drive API) on project `english-learning-os-automation` (Project # 938125838515).
-  4. **Control Plane Architecture**: Established Layer A versioned schemas ([ORCHESTRATION_POLICY.md](../../automation/control_plane_schema/ORCHESTRATION_POLICY.md), `STATE.schema.json`, templates) in Git and Layer B mutable control plane on external Google Drive (`English Learning OS Orchestration/`).
-  5. **State Machine Protocol**: Formalized explicit 8-state machine (`READY`, `EXECUTING`, `AWAITING_AUDIT`, `FIX_REQUIRED`, `APPROVED`, `HUMAN_REQUIRED`, `COMPLETE`, `ERROR`) with optimistic concurrency (`state_version`) and payload hashing (`content_hash`).
-  6. **Exclusive Git Delivery Controller**: Implemented [automation/runner.py](../../automation/runner.py) with protected paths enforcement, PID lock, secret sanitization, and automated quality gates.
-  7. **Independent Automated Auditor**: Implemented [automation/auditor.py](../../automation/auditor.py) (`EXECUTOR != AUDITOR`) auditing real GitHub commits, diffs, and CI runs, generating `NEXT_TASK.md` or corrective tasks.
-  8. **Make Integration Blueprints**: Authored exportable Make JSON blueprints in `automation/make/` (`00_connection_test_blueprint.json` and `01_orchestrator_blueprint.json`).
-  9. **30-Case Adversarial Suite**: Implemented and executed 30 test cases in `automation/tests/test_runner.py` (100% passing in 0.031s).
-  10. **Repository Integrity & Git Hygiene**: Zero runtime state in Git; working tree remains completely clean during state mutations.
+- **Reproduced & Surgically Resolved All 17 Audit Findings**:
+  1. **Fail-Closed CI Auditor Gate**: Fixed missing `import shutil` in `automation/auditor.py`. Rewrote `audit_ci_status()` so approval STRICTLY requires exact `commit_sha`, completed workflow run, and `conclusion == "success"`. Unverifiable or pending CI safely retains state `AWAITING_AUDIT` without approving.
+  2. **Real Two-Stage Audit**:
+     - *Stage A (Deterministic)*: Verifies commit exists on `origin/main` via `git ls-remote`, verifies parent relationship, changed file scope, protected path authorization strictly from immutable `CURRENT_TASK.md` metadata, defense-in-depth secret scan, and completed CI.
+     - *Stage B (Independent Model Review)*: Invokes `agy` using separate model (`gemini-3.1-pro-high`) with read-only evidence, enforcing strict structured JSON schema validation (`verdict`, `findings`, `requirement_coverage`, `confidence`, `next_action`).
+  3. **Authentic Model Reporting**: Removed fabricated model identifiers. Recorded actual model names, deterministic gate outcomes, and AI gate results in `AUDIT_REPORT.md`.
+  4. **Grounded NEXT_TASK & Loop Termination**: Removed generic synthetic task generation. Grounded planning in `docs/project/STATE.md` and `BACKLOG.md`. Enforced Gate 2 milestone boundary: pipeline halts at `HUMAN_REQUIRED` (blocking on `TASK-030` Learner Baseline).
+  5. **True Selective Staging**: Replaced `git add .` with explicit staging of validated non-sensitive, non-protected files only. Added staged diff whitespace checks (`git diff --cached --check`) and pre-commit secret scanning.
+  6. **Technical Git Containment**: Enforced pre/post execution assertions on HEAD, branch, remotes, and refs in `runner.py`. Implemented Antigravity `PreToolUse` hook in `scripts/git_pretool_hook.py` and `.agents/hooks.json` to hard-block Git mutating commands (`git commit`, `git push`, `git checkout`, etc.). Documented empirical necessity of `--dangerously-skip-permissions` for headless `agy` tool execution.
+  7. **Remote Commit Verification**: Proved commit exists on GitHub remote `origin/main` via `git ls-remote`.
+  8. **Defense-in-Depth Secret Detection**: Added detection for modern Google AI Studio keys (`AIzaSy...`), OpenAI (`sk-proj-...`), Anthropic (`sk-ant-...`), Slack (`xoxb-...`), PEM private keys, and credential assignment heuristics.
+  9. **Comprehensive Verification Suites**:
+     - Unit tests: 30 tests in `automation/tests/test_runner.py` (100% pass).
+     - Integration tests: 8 tests in `automation/tests/test_integration.py` (100% pass).
+     - End-to-end sandbox test: `automation/tests/test_e2e_sandbox.py` proving complete task-runner-commit-audit-Gate2 lifecycle (100% pass).
+  10. **Zero Daemons Active**: No background `launchd` services or continuous polling loops enabled.
 
 ---
 
 ## 2. Active Decisions & Governance Status
-- **DEC-012**: Automation control plane separates Layer A (Git source code, schemas, tools) from Layer B (mutable runtime control plane on external Google Drive).
-- **Pedagogical Invariant**: Pedagogical architecture is untouched; Gate 2 remains strictly `GATE 2: BLOCKED ON LEARNER BASELINE`.
-
-- **Source of Truth**: GitHub `main` remains canonical. Drive is exclusively volatile control plane.
+- **DEC-013**: Automation Hardening & Autonomy Containment approved and enforced across Layer A and Layer B.
+- **Pedagogical Invariant**: Gate 2 remains strictly `GATE 2: BLOCKED ON LEARNER BASELINE`. Phase 03 is **LOCKED**.
+- **Make Workspace Status**: Blueprints are versioned in `automation/make/`, but Make connections (Google Drive / Gemini) remain unconfigured. System operates standalone without Make dependency.
 
 ---
 
-## 3. Recommended Next Actions
-1. Execute Human Action (1 step): In Make web interface, import blueprint `automation/make/00_connection_test_blueprint.json` and authenticate Google Drive / Gemini connections.
-2. Run local runner in daemon or once mode (`python3 automation/runner.py --once`).
-3. External supervisor (ChatGPT) audits handoff and diff, writing `AUDIT_REPORT.md`.
+## 3. Operational State & Stop Condition
+- **Operational State**: `HUMAN_REQUIRED`
+- **Blocker**: `TASK-030 (GATING BLOCKER)` — Learner baseline diagnostic responses required to compute vector $\vec{P}$ and close Gate 2.
+- **External Review**: Ready for external supervisor (ChatGPT) adversarial audit. Zero autonomous loops active.

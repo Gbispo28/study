@@ -1,4 +1,19 @@
 {
+  "git-containment": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ./scripts/git_pretool_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
   "safety-gate": {
     "enabled": false,
     "PreToolUse": [

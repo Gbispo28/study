@@ -7,11 +7,15 @@ Key Invariants:
 - Outbound polling only: Zero listening ports or inbound network attack surfaces.
 - Exclusive Git Delivery Controller: The executor agent is prohibited from git operations;
   runner alone inspects diffs, validates scope, runs quality gates, commits, and pushes.
+- True Selective Staging: Eliminates 'git add .'; stages only validated explicit files.
+- Technical Git Containment: Pre/post execution assertions ensure executor cannot commit,
+  switch branches, alter remotes, or create refs.
 - Protected Paths: Blocks edits to runner, auditor, schemas, quality gates, .agents, CI.
 - Payload-First, State-Last: Validates SHA-256 content_hash of CURRENT_TASK.md.
 - Optimistic Concurrency: Enforces state_versioning on STATE.json.
 - Idempotency: Tracks executed (task_id, expected_git_head) in execution_history.json.
-- Zero Secrets: SafeLogger strips API keys and credentials from logs and output.
+- Defense-in-Depth Secret Detection: Covers modern Google AI Studio keys, OpenAI, Anthropic,
+  Slack, PEM keys, and assignment heuristics without logging sensitive values.
 """
 
 import sys
@@ -28,12 +32,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
 
+# Defense-in-depth secret patterns
 SECRET_PATTERNS = [
-    re.compile(r"ghp_[A-Za-z0-9_]{20,50}"),
-    re.compile(r"github_pat_[A-Za-z0-9_]{20,90}"),
-    re.compile(r"AIza[0-9A-Za-z-_]{20,50}"),
-    re.compile(r"sk-[A-Za-z0-9]{20,50}"),
-    re.compile(r"bearer\s+[A-Za-z0-9\-\._~\+\/]+=*", re.IGNORECASE),
+    re.compile(r"\bghp_[A-Za-z0-9_]{20,80}"),
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,90}"),
+    # Google AI / Gemini API keys (including modern 39-char format and standard formats)
+    re.compile(r"\bAIza[0-9A-Za-z-_]{30,50}"),
+    # OpenAI formats (classic sk- and modern sk-proj-, sk-admin-)
+    re.compile(r"\bsk-(?:proj-|admin-)?[A-Za-z0-9_-]{20,90}"),
+    # Anthropic formats
+    re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,90}"),
+    # Slack tokens
+    re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,60}"),
+    # Bearer & Basic Auth headers with real credential tokens (15+ chars)
+    re.compile(r"\b(?:Bearer|Basic)\s+[A-Za-z0-9\-\._~\+\/]{15,}=*", re.IGNORECASE),
+    # PEM Private Keys
+    re.compile(r"-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9_-]+ )?PRIVATE KEY-----"),
+    # Generic secret assignment heuristics: api_key = "..." or password = "..."
+    re.compile(r"""(?i)\b(?:api[_-]?key|secret[_-]?key|client[_-]?secret|access[_-]?token|auth[_-]?token|private[_-]?key)\s*[:=]\s*['"][A-Za-z0-9_\-\.\/+=]{12,}['"]"""),
 ]
 
 PROTECTED_PATHS = [
@@ -42,17 +58,33 @@ PROTECTED_PATHS = [
     "automation/control_plane_schema/",
     "scripts/quality_gate.sh",
     "scripts/validate_repo.py",
+    "scripts/git_pretool_hook.py",
     ".agents/",
     ".github/workflows/",
 ]
 
+SENSITIVE_FILENAME_PATTERNS = [
+    re.compile(r"^\.env(?:\..+)?$"),
+    re.compile(r".*\.(?:pem|key|pkcs12|pfx)$", re.IGNORECASE),
+    re.compile(r"(?:id_rsa|id_ecdsa|id_ed25519)(?:\.pub)?$"),
+    re.compile(r"(?:credentials|secrets)\.json$", re.IGNORECASE),
+]
+
 
 def sanitize_text(text: str) -> str:
-    """Mask potential secret patterns from strings."""
+    """Mask potential secret patterns from strings without revealing secret values."""
     sanitized = text
     for pattern in SECRET_PATTERNS:
         sanitized = pattern.sub("[REDACTED_SECRET]", sanitized)
     return sanitized
+
+
+def scan_text_for_secrets(text: str) -> Tuple[bool, str]:
+    """Scans text for secrets; returns (has_secret, summary). Never logs secret content."""
+    for pattern in SECRET_PATTERNS:
+        if pattern.search(text):
+            return (True, f"Potential credential pattern detected (matched regex {pattern.pattern[:30]}...)")
+    return (False, "")
 
 
 class SafeLogger:
@@ -146,7 +178,6 @@ class OrchestrationRunner:
         self.config = config
         self.logger = logger
 
-        # Control plane directory (external Google Drive folder by default)
         default_cp_dir = Path.home() / "Google Drive" / "Meu Drive" / "English Learning OS Orchestration"
         configured_cp = config.get("control_plane_dir")
         if configured_cp:
@@ -154,7 +185,6 @@ class OrchestrationRunner:
         elif default_cp_dir.exists():
             self.control_plane_dir = default_cp_dir
         else:
-            # Local fallback outside working tree
             self.control_plane_dir = Path.home() / ".english_learning_os_orchestration"
 
         self.control_plane_dir.mkdir(parents=True, exist_ok=True)
@@ -202,7 +232,6 @@ class OrchestrationRunner:
             temp_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
             temp_path.replace(self.state_file)
 
-            # Append to event log
             self.append_event({
                 "timestamp": state["updated_at"],
                 "event": f"STATE_TRANSITION_{state.get('state')}",
@@ -231,6 +260,24 @@ class OrchestrationRunner:
     def get_git_head(self) -> str:
         res = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True)
         return res.strip()
+
+    def get_git_branch(self) -> str:
+        res = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=self.repo_root, text=True)
+        return res.strip()
+
+    def get_git_remotes(self) -> str:
+        try:
+            res = subprocess.check_output(["git", "remote", "-v"], cwd=self.repo_root, text=True)
+            return res.strip()
+        except Exception:
+            return ""
+
+    def get_git_refs_snapshot(self) -> str:
+        try:
+            res = subprocess.check_output(["git", "show-ref"], cwd=self.repo_root, text=True)
+            return res.strip()
+        except Exception:
+            return ""
 
     def is_git_clean(self) -> bool:
         res = subprocess.check_output(["git", "status", "--porcelain"], cwd=self.repo_root, text=True)
@@ -262,20 +309,29 @@ class OrchestrationRunner:
             for h in history
         )
 
+    def get_changed_and_untracked_files(self) -> List[Tuple[str, str]]:
+        """Returns list of (status_code, file_path) from git status --porcelain."""
+        res = subprocess.check_output(["git", "status", "--porcelain"], cwd=self.repo_root, text=True)
+        items = []
+        for line in res.splitlines():
+            line_str = line.strip()
+            if not line_str:
+                continue
+            status = line[:2].strip()
+            filepath = line[3:].strip()
+            if " -> " in filepath:
+                filepath = filepath.split(" -> ")[1].strip()
+            items.append((status, filepath))
+        return items
+
     def verify_protected_paths(self, maintenance_mode: bool = False) -> Tuple[bool, List[str]]:
         """Verifies that no protected paths are modified unless maintenance_mode is enabled."""
         if maintenance_mode:
             return (True, [])
 
-        res = subprocess.check_output(["git", "status", "--porcelain"], cwd=self.repo_root, text=True)
-        modified_files = []
-        for line in res.splitlines():
-            parts = line.strip().split(maxsplit=1)
-            if len(parts) == 2:
-                modified_files.append(parts[1].strip())
-
+        changed = self.get_changed_and_untracked_files()
         violations = []
-        for mf in modified_files:
+        for _, mf in changed:
             for pp in PROTECTED_PATHS:
                 if mf == pp or mf.startswith(pp):
                     violations.append(mf)
@@ -301,7 +357,15 @@ class OrchestrationRunner:
             return (False, f"Error executing quality gate: {e}")
 
     def execute_agy(self, prompt: str, model: Optional[str] = None) -> Tuple[bool, str]:
-        """Invokes Antigravity CLI in non-interactive print mode with JSON output."""
+        """
+        Invokes Antigravity CLI in non-interactive print mode with JSON output.
+
+        NOTE ON --dangerously-skip-permissions:
+        In headless/non-interactive print mode (-p), agy cannot prompt for interactive
+        tool confirmations; omitting this flag causes tools to auto-deny ('jetski: no output produced').
+        Technical Git containment is enforced by Pre/Post Git state assertions
+        and the Antigravity PreToolUse hook in .agents/hooks.json.
+        """
         agy_bin = self.config.get("agy_binary", "/Users/gmbispo/.local/bin/agy")
         if not Path(agy_bin).exists():
             agy_bin = shutil.which("agy") or agy_bin
@@ -346,33 +410,81 @@ class OrchestrationRunner:
         except Exception as e:
             return (False, f"agy execution error: {e}")
 
-    def git_deliver(self, task_id: str, commit_msg: str) -> Tuple[bool, str, Optional[str]]:
-        """Exclusive Git Delivery Controller."""
+    def git_deliver(
+        self,
+        task_id: str,
+        commit_msg: str,
+        maintenance_mode: bool = False,
+    ) -> Tuple[bool, str, Optional[str]]:
+        """
+        Exclusive Git Delivery Controller with True Selective Staging.
+        NEVER uses 'git add .'. Stages only validated explicit files.
+        """
         remote = self.config.get("git_remote", "origin")
         branch = self.config.get("git_branch", "main")
         try:
-            # 1. Selective add
-            subprocess.run(["git", "add", "."], cwd=self.repo_root, check=True)
+            # 1. Collect exact changed and untracked files
+            changed_items = self.get_changed_and_untracked_files()
+            if not changed_items:
+                self.logger.info("No modifications detected to deliver.")
+                head = self.get_git_head()
+                return (True, "No changes to deliver.", head)
 
-            # 2. Check if anything staged
+            # 2. Validate paths against sensitive file rules and protected paths
+            for _, filepath in changed_items:
+                # Sensitive filename check
+                filename = Path(filepath).name
+                for sens_pat in SENSITIVE_FILENAME_PATTERNS:
+                    if sens_pat.match(filename):
+                        return (False, f"SecurityViolation: Sensitive file detected in working tree: {filepath}", None)
+
+                # Protected path check
+                if not maintenance_mode:
+                    for pp in PROTECTED_PATHS:
+                        if filepath == pp or filepath.startswith(pp):
+                            return (
+                                False,
+                                f"SecurityViolation: Protected path modification rejected without maintenance mode: {filepath}",
+                                None,
+                            )
+
+            # 3. Stage ONLY validated explicit paths (True Selective Staging)
+            for _, filepath in changed_items:
+                subprocess.run(["git", "add", filepath], cwd=self.repo_root, check=True)
+
+            # 4. Check if anything staged
             diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=self.repo_root)
             if diff_check.returncode == 0:
                 self.logger.info("No modifications staged to deliver.")
                 head = self.get_git_head()
                 return (True, "No changes to deliver.", head)
 
-            # 3. Check for whitespace/formatting errors
-            ws_check = subprocess.run(["git", "diff", "--cached", "--check"], cwd=self.repo_root, capture_output=True)
+            # 5. Check staged diff for whitespace/formatting errors
+            ws_check = subprocess.run(["git", "diff", "--cached", "--check"], cwd=self.repo_root, capture_output=True, text=True)
             if ws_check.returncode != 0:
-                return (False, f"Whitespace errors in staged diff:\n{ws_check.stderr.decode()}", None)
+                # Unstage
+                subprocess.run(["git", "reset", "HEAD"], cwd=self.repo_root)
+                return (False, f"Whitespace errors in staged diff:\n{ws_check.stderr or ws_check.stdout}", None)
 
-            # 4. Commit atomically
+            # 6. Secret scan staged diff before commit
+            staged_diff = subprocess.check_output(["git", "diff", "--cached"], cwd=self.repo_root, text=True)
+            has_secret, secret_reason = scan_text_for_secrets(staged_diff)
+            if has_secret:
+                # Unstage to prevent accidental persistence
+                subprocess.run(["git", "reset", "HEAD"], cwd=self.repo_root)
+                return (False, f"SecretLeakDetected: {secret_reason}", None)
+
+            # 7. Commit atomically
             formatted_msg = f"feat(task): {task_id} - {commit_msg}"
             subprocess.run(["git", "commit", "-m", formatted_msg], cwd=self.repo_root, check=True)
             head = self.get_git_head()
 
-            # 5. Push to remote
-            subprocess.run(["git", "push", remote, branch], cwd=self.repo_root, check=True)
+            # 8. Push to remote (if push is not disabled in config)
+            if self.config.get("disable_git_push", False):
+                self.logger.info("Git push disabled by configuration (test/local mode).")
+            else:
+                subprocess.run(["git", "push", remote, branch], cwd=self.repo_root, check=True)
+
             return (True, f"Committed and pushed as {head[:7]}.", head)
         except Exception as e:
             return (False, f"Git delivery failed: {e}", None)
@@ -404,9 +516,11 @@ class OrchestrationRunner:
 
 ## Verification Evidence
 - Repository working tree verified clean before run.
+- Technical Git containment enforced: zero git delivery operations during execution.
 - Protected paths respected; no perimeter violations.
-- Quality gates passed with code 0.
-- Staged diff verified whitespace-clean; commit pushed to `{self.config.get('git_branch', 'main')}`.
+- Staged diff verified whitespace-clean and secret-free.
+- True selective staging enforced; zero repository-wide additions.
+- Commit pushed to `{self.config.get('git_branch', 'main')}`.
 """
         self.handoff_file.write_text(content, encoding="utf-8")
 
@@ -480,6 +594,12 @@ class OrchestrationRunner:
                 self.save_state(state, expected_version=current_version)
                 return False
 
+            # Capture pre-execution repository baseline for containment verification
+            pre_head = current_head
+            pre_branch = self.get_git_branch()
+            pre_remotes = self.get_git_remotes()
+            pre_refs = self.get_git_refs_snapshot()
+
             # 2. Mark EXECUTING
             state["state"] = "EXECUTING"
             state["execution_id"] = execution_id
@@ -488,15 +608,18 @@ class OrchestrationRunner:
             current_version += 1
             self.logger.info(f"Marked state EXECUTING for '{task_id}'.")
 
-            # 3. Read Task & Inspect Maintenance Mode
+            # 3. Read Task & Inspect Maintenance Mode from immutable task metadata
             task_content = self.current_task_file.read_text(encoding="utf-8")
-            maintenance_mode = "maintenance_mode: true" in task_content.lower() or "maintenance mode: true" in task_content.lower()
+            maintenance_mode = (
+                "maintenance_mode: true" in task_content.lower()
+                or "maintenance mode: true" in task_content.lower()
+            )
 
             # 4. Invoke Executor (agy CLI) with prompt boundaries
             prompt = (
                 f"You are the implementation agent for English Learning OS.\n"
                 f"Task ID: {task_id}\n"
-                f"CRITICAL CONSTRAINT: You are FORBIDDEN from running 'git add', 'git commit', or 'git push'.\n"
+                f"CRITICAL CONSTRAINT: You are FORBIDDEN from running 'git add', 'git commit', 'git push', 'git reset', 'git checkout', 'git switch', or 'git tag'.\n"
                 f"Git delivery is handled exclusively by the outer runner.\n"
                 f"Respect all rules in AGENTS.md.\n\n"
                 f"TASK SPECIFICATION (DATA):\n{task_content}"
@@ -511,13 +634,54 @@ class OrchestrationRunner:
                 self.save_state(state, expected_version=current_version)
                 return False
 
-            # 5. Protected Paths Scope Verification
+            # 5. Technical Git Containment Verification
+            post_head = self.get_git_head()
+            post_branch = self.get_git_branch()
+            post_remotes = self.get_git_remotes()
+            post_refs = self.get_git_refs_snapshot()
+
+            if post_head != pre_head:
+                err_msg = f"GitContainmentViolation: Executor altered Git HEAD (pre: {pre_head}, post: {post_head})."
+                self.logger.error(err_msg)
+                subprocess.run(["git", "reset", "--hard", pre_head], cwd=self.repo_root)
+                subprocess.run(["git", "clean", "-fd"], cwd=self.repo_root)
+                state["last_error"] = err_msg
+                state["state"] = "ERROR"
+                self.save_state(state, expected_version=current_version)
+                return False
+
+            if post_branch != pre_branch:
+                err_msg = f"GitContainmentViolation: Executor switched branch (pre: {pre_branch}, post: {post_branch})."
+                self.logger.error(err_msg)
+                subprocess.run(["git", "checkout", pre_branch], cwd=self.repo_root)
+                state["last_error"] = err_msg
+                state["state"] = "ERROR"
+                self.save_state(state, expected_version=current_version)
+                return False
+
+            if post_remotes != pre_remotes:
+                err_msg = "GitContainmentViolation: Executor modified Git remote configurations."
+                self.logger.error(err_msg)
+                state["last_error"] = err_msg
+                state["state"] = "ERROR"
+                self.save_state(state, expected_version=current_version)
+                return False
+
+            if post_refs != pre_refs:
+                err_msg = "GitContainmentViolation: Executor created or altered Git refs/branches/tags."
+                self.logger.error(err_msg)
+                state["last_error"] = err_msg
+                state["state"] = "ERROR"
+                self.save_state(state, expected_version=current_version)
+                return False
+
+            # 6. Protected Paths Scope Verification
             paths_ok, violations = self.verify_protected_paths(maintenance_mode)
             if not paths_ok:
                 err_msg = f"SecurityViolation: Protected paths modified without maintenance mode: {violations}"
                 self.logger.error(err_msg)
-                # Rollback changes to keep tree clean
                 subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=self.repo_root)
+                subprocess.run(["git", "clean", "-fd"], cwd=self.repo_root)
                 retry_count += 1
                 state["retry_count"] = retry_count
                 state["last_error"] = err_msg
@@ -525,7 +689,7 @@ class OrchestrationRunner:
                 self.save_state(state, expected_version=current_version)
                 return False
 
-            # 6. Run Quality Gate
+            # 7. Run Quality Gate
             qg_passed, qg_out = self.run_quality_gate()
             if not qg_passed:
                 self.logger.error(f"Quality gate failed:\n{qg_out[:300]}")
@@ -536,9 +700,11 @@ class OrchestrationRunner:
                 self.save_state(state, expected_version=current_version)
                 return False
 
-            # 7. Git Delivery via Runner
+            # 8. Git Delivery via Runner (True Selective Staging)
             commit_ok, commit_msg, resulting_head = self.git_deliver(
-                task_id, f"complete autonomous execution ({execution_id})"
+                task_id=task_id,
+                commit_msg=f"complete autonomous execution ({execution_id})",
+                maintenance_mode=maintenance_mode,
             )
             if not commit_ok:
                 self.logger.error(f"Git delivery failed: {commit_msg}")
@@ -547,10 +713,10 @@ class OrchestrationRunner:
                 self.save_state(state, expected_version=current_version)
                 return False
 
-            # 8. Record Execution in History
+            # 9. Record Execution in History
             self.record_execution(task_id, expected_head, execution_id)
 
-            # 9. Payload First: Write Handoff
+            # 10. Payload First: Write Handoff
             self.write_handoff(
                 task_id=task_id,
                 execution_id=execution_id,
@@ -560,7 +726,7 @@ class OrchestrationRunner:
                 qg_passed=True,
             )
 
-            # 10. State Last: Advance to AWAITING_AUDIT
+            # 11. State Last: Advance to AWAITING_AUDIT
             state["state"] = "AWAITING_AUDIT"
             state["resulting_git_head"] = resulting_head or current_head
             state["retry_count"] = 0

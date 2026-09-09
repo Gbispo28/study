@@ -49,6 +49,7 @@
 - **DEC-010**: Assessment architecture strictly segregates learner surfaces (`docs/assessment/learner/`) from administrative surfaces (`docs/assessment/admin/`) to prevent test answer and audio script contamination.
 - **DEC-011**: The custom diagnostic battery operates under an explicit measurement ceiling at **B2**, reporting `ABOVE CURRENT INSTRUMENT CEILING` for advanced performances rather than making pseudo-psychometric C1/C2 claims.
 - **DEC-012**: Automation control plane separates Layer A (Git source code, schemas, tools) from Layer B (mutable runtime control plane on external Google Drive). Local runner (`automation/runner.py`) is exclusive Git Delivery Controller with protected path enforcement; Automated Auditor (`automation/auditor.py`) runs independently (`EXECUTOR != AUDITOR`) verifying real GitHub evidence; Make provides cloud coordination; ChatGPT acts as external strategic supervisor.
+- **DEC-013**: Automation Hardening & Containment: Fail-closed CI gate (requires completed + success); real two-stage audit (Stage A deterministic + Stage B independent model review with structured JSON validation); true selective staging (no `git add .`); technical Git containment (pre/post execution assertions + `.agents/hooks.json` PreToolUse hook); remote commit verification against `origin/main`; immutable task metadata authorization for protected paths; and grounded task generation terminating at `HUMAN_REQUIRED` (Gate 2 Learner Baseline blocker). Zero background daemons active.
 
 
 

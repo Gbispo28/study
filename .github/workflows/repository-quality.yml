@@ -26,8 +26,13 @@ jobs:
       - name: Validate script syntax
         run: |
           python3 -m py_compile scripts/validate_repo.py
+          python3 -m py_compile automation/runner.py automation/auditor.py scripts/git_pretool_hook.py
           bash -n scripts/quality_gate.sh
 
       - name: Execute Quality Gate Validator
         run: |
           python3 scripts/validate_repo.py
+
+      - name: Execute Automation Test Suite
+        run: |
+          python3 -m unittest discover -s automation/tests -v
