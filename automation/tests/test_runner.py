@@ -11,6 +11,7 @@ import json
 import hashlib
 import tempfile
 import subprocess
+from typing import Any, Dict, List, Optional, Tuple
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
