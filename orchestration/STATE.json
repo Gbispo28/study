@@ -1,14 +1,14 @@
 {
-  "state": "READY",
+  "state": "AWAITING_AUDIT",
   "execution_id": "exec-init-001",
   "task_id": "TASK-INFRA-001",
   "parent_task_id": null,
   "created_at": "2026-09-08T20:05:00Z",
-  "updated_at": "2026-09-08T20:05:00Z",
+  "updated_at": "2026-09-08T20:11:00Z",
   "retry_count": 0,
   "max_retries": 3,
   "expected_git_head": "d7b0ccbb63c629e7efd7a5095ede9eceb456e92a",
-  "resulting_git_head": null,
+  "resulting_git_head": "84a286f9e01140938fcf8d0e7d5cf2ddffad27c1",
   "gate_status": "GATE 2: BLOCKED ON LEARNER BASELINE",
   "last_error": null
 }
