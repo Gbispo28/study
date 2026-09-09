@@ -1,0 +1,175 @@
+{
+  "name": "01 - English Learning OS - Orchestrator",
+  "description": "Monitors STATE.json in Google Drive study/orchestration folder and advances tasks when APPROVED.",
+  "flow": [
+    {
+      "id": 1,
+      "module": "google-drive:watchFilesInAFolder",
+      "version": 1,
+      "parameters": {
+        "folderId": "1N6BWV6xeIdwSzhSxj5YihN24nMe-cEKd",
+        "where": "all"
+      },
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 100
+        }
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:filter",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "condition": "{{1.title}} = 'STATE.json'"
+      },
+      "metadata": {
+        "designer": {
+          "x": 150,
+          "y": 100
+        }
+      }
+    },
+    {
+      "id": 3,
+      "module": "google-drive:downloadAFile",
+      "version": 1,
+      "parameters": {
+        "fileId": "{{1.id}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 100
+        }
+      }
+    },
+    {
+      "id": 4,
+      "module": "json:parseJSON",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "json": "{{3.data}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 450,
+          "y": 100
+        }
+      }
+    },
+    {
+      "id": 5,
+      "module": "builtin:router",
+      "version": 1,
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 6,
+              "module": "google-drive:searchForFilesFolders",
+              "version": 1,
+              "parameters": {
+                "folderId": "1N6BWV6xeIdwSzhSxj5YihN24nMe-cEKd",
+                "search": "name = 'NEXT_TASK.md'"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 600,
+                  "y": 0
+                }
+              }
+            },
+            {
+              "id": 7,
+              "module": "google-drive:downloadAFile",
+              "version": 1,
+              "parameters": {
+                "fileId": "{{6.id}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 750,
+                  "y": 0
+                }
+              }
+            },
+            {
+              "id": 8,
+              "module": "google-drive:uploadAFile",
+              "version": 1,
+              "parameters": {
+                "folderId": "1N6BWV6xeIdwSzhSxj5YihN24nMe-cEKd",
+                "name": "CURRENT_TASK.md",
+                "data": "{{7.data}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": 0
+                }
+              }
+            },
+            {
+              "id": 9,
+              "module": "google-drive:uploadAFile",
+              "version": 1,
+              "parameters": {
+                "folderId": "1N6BWV6xeIdwSzhSxj5YihN24nMe-cEKd",
+                "name": "STATE.json",
+                "data": "{\"state\": \"READY\", \"execution_id\": \"exec-next-{{now}}\", \"task_id\": \"{{4.task_id}}\", \"retry_count\": 0, \"max_retries\": 3, \"expected_git_head\": \"{{4.resulting_git_head}}\", \"gate_status\": \"GATE 2: BLOCKED ON LEARNER BASELINE\"}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1050,
+                  "y": 0
+                }
+              }
+            }
+          ],
+          "filter": {
+            "name": "State is APPROVED",
+            "condition": "{{4.state}} = 'APPROVED'"
+          }
+        },
+        {
+          "flow": [
+            {
+              "id": 10,
+              "module": "builtin:null",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 600,
+                  "y": 200
+                }
+              }
+            }
+          ],
+          "filter": {
+            "name": "State is HUMAN_REQUIRED or ERROR",
+            "condition": "{{4.state}} = 'HUMAN_REQUIRED' or {{4.state}} = 'ERROR'"
+          }
+        }
+      ],
+      "metadata": {
+        "designer": {
+          "x": 450,
+          "y": 100
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true
+    }
+  }
+}

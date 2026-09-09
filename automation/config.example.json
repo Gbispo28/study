@@ -1,0 +1,13 @@
+{
+  "repo_root": ".",
+  "orchestration_dir": "orchestration",
+  "poll_interval_seconds": 10,
+  "max_retries": 3,
+  "execution_timeout_seconds": 300,
+  "agy_binary": "/Users/gmbispo/.local/bin/agy",
+  "default_model": "gemini-3.8-flash-high",
+  "quality_gate_command": "bash scripts/quality_gate.sh",
+  "git_remote": "origin",
+  "git_branch": "main",
+  "log_file": "automation/logs/runner.log"
+}

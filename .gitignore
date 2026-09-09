@@ -73,3 +73,9 @@ temp/
 coverage/
 .coverage
 .pytest_cache/
+
+# Automation Runner
+automation/logs/
+automation/state/
+automation/config.json
+automation/.lock

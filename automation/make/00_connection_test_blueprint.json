@@ -1,0 +1,56 @@
+{
+  "name": "00 - English Learning OS - Connection Test",
+  "description": "Tests connectivity to Google Gemini AI and Google Drive control plane folder (study).",
+  "flow": [
+    {
+      "id": 1,
+      "module": "google-gemini-ai:generateContent",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "model": "gemini-1.5-flash",
+        "prompt": "Return exactly: CONNECTION_OK"
+      },
+      "metadata": {
+        "designer": {
+          "x": 100,
+          "y": 100
+        },
+        "restore": {
+          "expect": {
+            "model": {
+              "label": "Gemini 1.5 Flash"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "module": "google-drive:searchForFilesFolders",
+      "version": 1,
+      "parameters": {
+        "select": "all"
+      },
+      "mapper": {
+        "folderId": "1N6BWV6xeIdwSzhSxj5YihN24nMe-cEKd",
+        "search": "name contains 'AGENTS' or name contains 'README' or name contains 'CLAUDE'"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 100
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true
+    }
+  }
+}
