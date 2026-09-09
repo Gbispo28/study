@@ -30,8 +30,7 @@
 | **Diagnostic Pack** | Verified | Standardized 7-part test battery, rubrics, intake questionnaire, scoring model, and retest schedule in [docs/assessment/](../assessment/README.md) |
 | **Pedagogical Invariants** | Verified | [LEARNING_PRINCIPLES.md](../product/LEARNING_PRINCIPLES.md) (Canonical pedagogical contract) |
 | **System Specification** | Verified | [LEARNING_SYSTEM_SPEC.md](../product/LEARNING_SYSTEM_SPEC.md) (Master 18-section specification) |
-| **Product Requirements** | Verified | Updated [REQUIREMENTS.md](../product/REQUIREMENTS.md) reflecting audits and new confirmed requirements |
-| **Automation Control Plane** | Verified | [ORCHESTRATION_POLICY.md](../../automation/control_plane_schema/ORCHESTRATION_POLICY.md), [runner.py](../../automation/runner.py), [auditor.py](../../automation/auditor.py), Make blueprints (`automation/make/`), 30-case adversarial test suite |
+| **Automation Control Plane** | Verified | [ORCHESTRATION_POLICY.md](../../automation/control_plane_schema/ORCHESTRATION_POLICY.md), [runner.py](../../automation/runner.py), [auditor.py](../../automation/auditor.py), Make blueprints (`automation/make/`), 64-case test suite (62 deterministic CI + 2 local real agy smoke) |
 
 ---
 

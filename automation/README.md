@@ -84,3 +84,23 @@ python3 automation/auditor.py --standalone
    - Occurs if remote has new commits. Run `git pull --rebase origin main` and align `expected_git_head` in `STATE.json`.
 3. **Emergency Stop**:
    - Set `"state": "HUMAN_REQUIRED"` in `STATE.json`. All runners and auditors will pause on next poll.
+
+---
+
+## 5. Testing Architecture
+
+The automation control plane includes 64 automated test cases across 4 test modules:
+- `automation/tests/test_runner.py`: Unit tests for runner state machine, git index containment, machine-enforceable task scopes, path prefix boundaries, locks, and modern secret detection.
+- `automation/tests/test_integration.py`: Real git integration tests verifying selective staging, commit containment, independent Stage A scope verification, mandatory content_hash/task_id, corrective task scope preservation, and full Stage B schema validation.
+- `automation/tests/test_e2e_sandbox.py`: Sandbox integration lifecycle test exercising the full execution, audit, and termination cycle.
+- `automation/tests/test_real_boundary_smoke.py`: Real process smoke tests:
+  - Real pretool hook fail-closed and read-only allowlist tests (runs in all environments).
+  - Real host `agy` CLI envelope contract and adversarial prompt injection containment tests (local workstation only; skips cleanly on cloud CI where `agy` binary is not installed).
+
+```bash
+# Run full test suite (auto-discovers all tests):
+python3 -m unittest discover -s automation/tests -v
+
+# Run local-only real boundary smoke suite on host Mac:
+python3 -m unittest automation.tests.test_real_boundary_smoke -v
+```

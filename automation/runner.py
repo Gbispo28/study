@@ -29,7 +29,7 @@ import hashlib
 import argparse
 import subprocess
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Dict, Any, Optional, Tuple, List
 
 # Defense-in-depth secret patterns
@@ -139,17 +139,87 @@ def parse_task_scope(task_text: str) -> Tuple[List[str], List[str]]:
     return allowed_paths, allowed_prefixes
 
 
+def normalize_scope_path(p: str) -> Optional[str]:
+    """
+    Normalizes a path string for scope validation using POSIX semantics.
+    Rejects:
+    - empty strings or whitespace
+    - absolute paths (/... or C:/...)
+    - paths containing '..' (path traversal)
+    - root wildcards ('.', '', '/')
+    Returns a clean relative POSIX path without leading './' or trailing '/',
+    or None if invalid or dangerous.
+    """
+    if not p or not isinstance(p, str):
+        return None
+    p_str = p.strip().strip("'\"`")
+    if not p_str or p_str in (".", "/", "\\"):
+        return None
+    if p_str.startswith("/") or p_str.startswith("\\"):
+        return None
+    if re.match(r"^[a-zA-Z]:", p_str):
+        return None
+
+    # Strip any leading ./ or .\
+    while p_str.startswith("./") or p_str.startswith(".\\"):
+        p_str = p_str[2:].strip()
+
+    if not p_str or p_str in (".", "/", "\\"):
+        return None
+
+    # Check parts for directory traversal or root wildcards
+    parts = PurePosixPath(p_str.replace("\\", "/")).parts
+    if any(part in ("..", "", ".") for part in parts):
+        return None
+
+    try:
+        norm = PurePosixPath(p_str.replace("\\", "/")).as_posix()
+    except Exception:
+        return None
+
+    norm = norm.strip("/")
+    if not norm or norm in (".", "/"):
+        return None
+
+    return norm
+
+
 def is_path_in_scope(filepath: str, allowed_paths: List[str], allowed_prefixes: List[str]) -> bool:
-    """Checks whether a filepath matches explicit allowed paths or path prefixes."""
-    clean_fp = filepath.strip().lstrip("./")
+    """
+    Checks whether a filepath matches explicit allowed paths or path prefixes.
+    Boundary Invariants:
+    - Path and prefixes are normalized via POSIX semantics.
+    - An allowed prefix represents either an exact path or a directory boundary.
+      For example, prefix 'docs/foo' matches 'docs/foo' or 'docs/foo/bar.md',
+      but strictly DOES NOT match 'docs/foobar/file.md'.
+    - Rejects path traversals (..), absolute paths, empty prefixes, and root wildcards.
+    """
+    norm_fp = normalize_scope_path(filepath)
+    if not norm_fp:
+        return False
+
+    fp_path = PurePosixPath(norm_fp)
+
+    # 1. Exact path matches
     for ap in allowed_paths:
-        clean_ap = ap.strip().lstrip("./")
-        if clean_fp == clean_ap:
+        norm_ap = normalize_scope_path(ap)
+        if not norm_ap:
+            continue
+        if norm_fp == norm_ap:
             return True
+
+    # 2. Directory prefix matches (must match directory boundary or exact path)
     for pref in allowed_prefixes:
-        clean_pref = pref.strip().lstrip("./")
-        if clean_fp == clean_pref or clean_fp.startswith(clean_pref):
-            return True
+        norm_pref = normalize_scope_path(pref)
+        if not norm_pref:
+            continue
+        pref_path = PurePosixPath(norm_pref)
+        try:
+            if fp_path == pref_path or fp_path.is_relative_to(pref_path):
+                return True
+        except (ValueError, AttributeError):
+            continue
+
     return False
 
 

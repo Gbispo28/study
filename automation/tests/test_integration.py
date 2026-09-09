@@ -15,13 +15,20 @@ import sys
 import json
 import shutil
 import tempfile
+import hashlib
 import subprocess
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from automation.runner import OrchestrationRunner, SafeLogger, PROTECTED_PATHS
-from automation.auditor import AutomatedAuditor
+from automation.runner import (
+    OrchestrationRunner,
+    SafeLogger,
+    PROTECTED_PATHS,
+    parse_task_scope,
+    is_path_in_scope,
+)
+from automation.auditor import AutomatedAuditor, parse_auditor_response
 
 
 def create_sandbox_repo(base_dir: Path) -> Path:
@@ -219,9 +226,17 @@ class TestAuditorIntegration(unittest.TestCase):
         )
         commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
 
-        # Set task with task_type: FEATURE (not authorized for infra)
+        # Set task with task_type: FEATURE (allowed in path scope, but prohibited by protected path gate)
         task_file = self.auditor.current_task_file
-        task_file.write_text("# Regular Task\ntask_type: FEATURE\nmaintenance_mode: false\n", encoding="utf-8")
+        task_file.write_text(
+            "# Task: TASK-BYPASS\n"
+            "**Task ID**: `TASK-BYPASS`\n"
+            "task_type: FEATURE\n"
+            "maintenance_mode: false\n"
+            "allowed_paths:\n"
+            "  - scripts/validate_repo.py\n",
+            encoding="utf-8"
+        )
         task_hash = self.auditor.compute_file_hash(task_file)
 
         ok, changed_files, diff_out = self.auditor.audit_commit_diff_and_scope(
@@ -438,7 +453,7 @@ class TestAuditorIntegration(unittest.TestCase):
         }
 
         with patch.object(self.auditor, "get_repo_fingerprint", side_effect=[pre_fp, post_fp]), \
-             patch("subprocess.run", return_value=subprocess.CompletedProcess([], 0, stdout='{"response": "{\\"verdict\\": \\"APPROVED\\"}"}', stderr="")):
+             patch("subprocess.run", return_value=subprocess.CompletedProcess([], 0, stdout='{"response": "{\\"verdict\\": \\"APPROVED\\", \\"findings\\": [], \\"requirement_coverage\\": [], \\"confidence\\": \\"HIGH\\", \\"next_action\\": \\"PROCEED\\"}"}', stderr="")):
 
             ok, res, err = self.auditor.execute_stage_b_model_audit(
                 task_content="task",
@@ -449,6 +464,200 @@ class TestAuditorIntegration(unittest.TestCase):
             )
             self.assertFalse(ok)
             self.assertIn("AUDITOR_CONTAINMENT_VIOLATION", err)
+
+    def test_corrective_task_preserves_scope_and_rejects_broadening(self):
+        """Remediation task preserves original allowed_paths and does not widen scope."""
+        orig_task = """# Task: T-ORIGINAL
+## Metadata
+- **Task ID**: `T-ORIGINAL`
+- **Parent Task ID**: `T-ORIGINAL`
+- **Task Type**: `FEATURE`
+- **Maintenance Mode**: `false`
+
+### Allowed Paths (Machine-Enforceable Scope)
+allowed_paths:
+  - docs/foo.md
+allowed_path_prefixes: []
+
+## 1. Description
+Initial task
+"""
+        self.auditor.current_task_file.write_text(orig_task, encoding="utf-8")
+        new_hash = self.auditor.generate_corrective_task("T-ORIGINAL", "Lint check failed", 0)
+
+        corrective_text = self.auditor.current_task_file.read_text(encoding="utf-8")
+        paths, prefixes = parse_task_scope(corrective_text)
+        self.assertIn("docs/foo.md", paths)
+        self.assertTrue(is_path_in_scope("docs/foo.md", paths, prefixes))
+        self.assertFalse(is_path_in_scope("docs/bar.md", paths, prefixes))
+        self.assertNotIn("docs/", prefixes)
+        self.assertIn("**Task Type**: `FEATURE`", corrective_text)
+        self.assertIn("**Maintenance Mode**: `false`", corrective_text)
+
+    def test_audit_entry_gate_requires_mandatory_content_hash(self):
+        """Missing, empty, or malformed content_hash in STATE.json triggers ControlPlaneIntegrityViolation."""
+        # 1. Missing content_hash
+        state = {
+            "state": "AWAITING_AUDIT",
+            "task_id": "T-HASH-TEST",
+            "resulting_git_head": "0123456789abcdef0123456789abcdef01234567",
+            "state_version": 1,
+        }
+        self.auditor.save_state(state)
+        res = self.auditor.execute_audit_cycle()
+        self.assertFalse(res)
+        saved = self.auditor.load_state()
+        self.assertEqual(saved["state"], "ERROR")
+        self.assertIn("ControlPlaneIntegrityViolation", saved["last_error"])
+        self.assertIn("content_hash is missing, empty, or malformed", saved["last_error"])
+
+        # 2. Empty content_hash
+        state["content_hash"] = ""
+        state["state"] = "AWAITING_AUDIT"
+        self.auditor.save_state(state)
+        res = self.auditor.execute_audit_cycle()
+        self.assertFalse(res)
+        saved = self.auditor.load_state()
+        self.assertEqual(saved["state"], "ERROR")
+        self.assertIn("ControlPlaneIntegrityViolation", saved["last_error"])
+
+        # 3. Malformed content_hash (e.g. not 64-char hex)
+        state["content_hash"] = "short-or-invalid-hash"
+        state["state"] = "AWAITING_AUDIT"
+        self.auditor.save_state(state)
+        res = self.auditor.execute_audit_cycle()
+        self.assertFalse(res)
+        saved = self.auditor.load_state()
+        self.assertEqual(saved["state"], "ERROR")
+        self.assertIn("ControlPlaneIntegrityViolation", saved["last_error"])
+
+    def test_audit_entry_gate_requires_mandatory_task_id(self):
+        """Missing or unparseable task_id in CURRENT_TASK.md triggers ControlPlaneIntegrityViolation."""
+        content_no_id = """# Title without task id
+Just random text without any metadata or task id header.
+"""
+        self.auditor.current_task_file.write_text(content_no_id, encoding="utf-8")
+        valid_hash = hashlib.sha256(content_no_id.encode("utf-8")).hexdigest()
+
+        state = {
+            "state": "AWAITING_AUDIT",
+            "task_id": "T-ID-TEST",
+            "resulting_git_head": "0123456789abcdef0123456789abcdef01234567",
+            "content_hash": valid_hash,
+            "state_version": 1,
+        }
+        self.auditor.save_state(state)
+        res = self.auditor.execute_audit_cycle()
+        self.assertFalse(res)
+        saved = self.auditor.load_state()
+        self.assertEqual(saved["state"], "ERROR")
+        self.assertIn("ControlPlaneIntegrityViolation", saved["last_error"])
+        self.assertIn("Missing or unparseable Task ID", saved["last_error"])
+
+    def test_auditor_independently_verifies_allowed_path_scope(self):
+        """Stage A independently verifies committed paths against CURRENT_TASK scope allowlist."""
+        task_content = """# Task: T-SCOPE-INDEP
+## Metadata
+- **Task ID**: `T-SCOPE-INDEP`
+- **Task Type**: `FEATURE`
+- **Maintenance Mode**: `false`
+
+### Allowed Paths (Machine-Enforceable Scope)
+allowed_paths:
+  - allowed_target.txt
+allowed_path_prefixes: []
+"""
+        self.auditor.current_task_file.write_text(task_content, encoding="utf-8")
+        task_hash = hashlib.sha256(task_content.encode("utf-8")).hexdigest()
+
+        # Commit an out-of-scope file
+        unauth_file = self.repo_root / "unauthorized_leak.txt"
+        unauth_file.write_text("leak\n", encoding="utf-8")
+        subprocess.run(["git", "add", "unauthorized_leak.txt"], cwd=self.repo_root, check=True)
+        subprocess.run(["git", "commit", "-m", "feat: rogue commit"], cwd=self.repo_root, check=True)
+        rogue_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+
+        ok, changed_files, diff_out = self.auditor.audit_commit_diff_and_scope(
+            commit_sha=rogue_sha,
+            expected_parent=None,
+            task_id="T-SCOPE-INDEP",
+            expected_task_hash=task_hash,
+        )
+        self.assertFalse(ok, "Auditor must independently reject commit with out-of-scope files!")
+        self.assertIn("ScopeViolation", diff_out)
+        self.assertIn("unauthorized_leak.txt", diff_out)
+
+    def test_parse_auditor_response_full_schema_and_logical_consistency(self):
+        """parse_auditor_response requires all 5 fields and enforces logical consistency."""
+        valid_approved = json.dumps({
+            "verdict": "APPROVED",
+            "findings": ["Looks great"],
+            "requirement_coverage": ["req1"],
+            "confidence": "HIGH",
+            "next_action": "PROCEED",
+        })
+        ok, res, msg = parse_auditor_response(valid_approved)
+        self.assertTrue(ok)
+        self.assertEqual(res["verdict"], "APPROVED")
+        self.assertEqual(res["next_action"], "PROCEED")
+
+        # Inconsistent: APPROVED + REMEDIATE
+        inconsistent_approved = json.dumps({
+            "verdict": "APPROVED",
+            "findings": [],
+            "requirement_coverage": [],
+            "confidence": "HIGH",
+            "next_action": "REMEDIATE",
+        })
+        ok, _, msg = parse_auditor_response(inconsistent_approved)
+        self.assertFalse(ok)
+        self.assertIn("Logical inconsistency", msg)
+
+        # Inconsistent: FIX_REQUIRED + PROCEED
+        inconsistent_fix = json.dumps({
+            "verdict": "FIX_REQUIRED",
+            "findings": ["defect"],
+            "requirement_coverage": [],
+            "confidence": "MEDIUM",
+            "next_action": "PROCEED",
+        })
+        ok, _, msg = parse_auditor_response(inconsistent_fix)
+        self.assertFalse(ok)
+        self.assertIn("Logical inconsistency", msg)
+
+        # Inconsistent: HUMAN_REQUIRED + PROCEED
+        inconsistent_human = json.dumps({
+            "verdict": "HUMAN_REQUIRED",
+            "findings": ["blocked"],
+            "requirement_coverage": [],
+            "confidence": "LOW",
+            "next_action": "PROCEED",
+        })
+        ok, _, msg = parse_auditor_response(inconsistent_human)
+        self.assertFalse(ok)
+        self.assertIn("Logical inconsistency", msg)
+
+        # Missing requirement_coverage
+        missing_req = json.dumps({
+            "verdict": "APPROVED",
+            "findings": [],
+            "confidence": "HIGH",
+            "next_action": "PROCEED",
+        })
+        ok, _, msg = parse_auditor_response(missing_req)
+        self.assertFalse(ok)
+        self.assertIn("requirement_coverage", msg)
+
+        # Missing confidence
+        missing_conf = json.dumps({
+            "verdict": "APPROVED",
+            "findings": [],
+            "requirement_coverage": [],
+            "next_action": "PROCEED",
+        })
+        ok, _, msg = parse_auditor_response(missing_conf)
+        self.assertFalse(ok)
+        self.assertIn("confidence", msg)
 
 
 if __name__ == "__main__":

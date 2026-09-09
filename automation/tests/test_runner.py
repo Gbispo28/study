@@ -22,6 +22,9 @@ from automation.runner import (
     RunnerLock,
     OrchestrationRunner,
     PROTECTED_PATHS,
+    normalize_scope_path,
+    is_path_in_scope,
+    parse_task_scope,
 )
 from automation.auditor import AutomatedAuditor
 
@@ -438,6 +441,25 @@ class TestAutomatedAuditor(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
+    def _set_task(self, task_id: str, content: Optional[str] = None) -> str:
+        if content is None:
+            content = f"""# Task: {task_id}
+## Metadata
+- **Task ID**: `{task_id}`
+- **Task Type**: `FEATURE`
+- **Maintenance Mode**: `false`
+
+### Allowed Paths (Machine-Enforceable Scope)
+allowed_paths:
+  - docs/file.md
+  - file.md
+  - file.txt
+  - scripts/validate_repo.py
+allowed_path_prefixes: []
+"""
+        self.current_task_file.write_text(content, encoding="utf-8")
+        return self.auditor.compute_file_hash(self.current_task_file)
+
     def test_auditor_prohibits_code_modification(self):
         """Test 24: Automated Auditor has zero methods that modify repository source code."""
         self.assertFalse(hasattr(self.auditor, "git_commit_and_push"))
@@ -446,13 +468,14 @@ class TestAutomatedAuditor(unittest.TestCase):
     def test_auditor_two_stage_approves_and_halts_at_human_required_gate(self):
         """Test 25: Auditor validates Stage A and Stage B, and grounds termination at Gate 2 (HUMAN_REQUIRED)."""
         commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+        task_hash = self._set_task("T-AUDIT-OK")
         state = {
             "state": "AWAITING_AUDIT",
             "state_version": 2,
             "task_id": "T-AUDIT-OK",
             "execution_id": "exec-100",
             "resulting_git_head": commit_sha,
-            "content_hash": self.auditor.compute_file_hash(self.current_task_file),
+            "content_hash": task_hash,
             "retry_count": 0,
             "max_retries": 3,
         }
@@ -472,13 +495,14 @@ class TestAutomatedAuditor(unittest.TestCase):
     def test_auditor_rejects_secret_leak_in_commit_diff(self):
         """Test 26: Potential secret in commit diff triggers FIX_REQUIRED in Stage A."""
         commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+        task_hash = self._set_task("T-SECRET-DIFF")
         state = {
             "state": "AWAITING_AUDIT",
             "state_version": 2,
             "task_id": "T-SECRET-DIFF",
             "execution_id": "exec-101",
             "resulting_git_head": commit_sha,
-            "content_hash": self.auditor.compute_file_hash(self.current_task_file),
+            "content_hash": task_hash,
             "retry_count": 0,
             "max_retries": 3,
         }
@@ -494,13 +518,14 @@ class TestAutomatedAuditor(unittest.TestCase):
     def test_auditor_rejects_protected_path_in_diff_without_metadata_authorization(self):
         """Test 27: Protected path modified in diff without immutable task authorization triggers FIX_REQUIRED."""
         commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+        task_hash = self._set_task("T-PROTECT-DIFF")
         state = {
             "state": "AWAITING_AUDIT",
             "state_version": 2,
             "task_id": "T-PROTECT-DIFF",
             "execution_id": "exec-102",
             "resulting_git_head": commit_sha,
-            "content_hash": self.auditor.compute_file_hash(self.current_task_file),
+            "content_hash": task_hash,
             "retry_count": 0,
             "max_retries": 3,
         }
@@ -515,13 +540,14 @@ class TestAutomatedAuditor(unittest.TestCase):
     def test_ci_fail_closed_pending_state_retains_awaiting_audit(self):
         """Test 28: CI still pending or queued MUST NOT approve; retains state AWAITING_AUDIT."""
         commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+        task_hash = self._set_task("T-CI-PENDING")
         state = {
             "state": "AWAITING_AUDIT",
             "state_version": 2,
             "task_id": "T-CI-PENDING",
             "execution_id": "exec-103",
             "resulting_git_head": commit_sha,
-            "content_hash": self.auditor.compute_file_hash(self.current_task_file),
+            "content_hash": task_hash,
             "retry_count": 0,
             "max_retries": 3,
         }
@@ -538,13 +564,14 @@ class TestAutomatedAuditor(unittest.TestCase):
     def test_ci_failure_transitions_to_fix_required(self):
         """Test 29: CI failure transitions state to FIX_REQUIRED with corrective task."""
         commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.repo_root, text=True).strip()
+        task_hash = self._set_task("T-CI-FAIL")
         state = {
             "state": "AWAITING_AUDIT",
             "state_version": 2,
             "task_id": "T-CI-FAIL",
             "execution_id": "exec-104",
             "resulting_git_head": commit_sha,
-            "content_hash": self.auditor.compute_file_hash(self.current_task_file),
+            "content_hash": task_hash,
             "retry_count": 0,
             "max_retries": 3,
         }
@@ -741,6 +768,47 @@ allowed_paths:
             self.assertEqual(saved["state"], "FIX_REQUIRED")
             self.assertIn("ScopeViolation", saved["last_error"])
             self.assertIn("arbitrary.txt", saved["last_error"])
+
+
+class TestPathScopeNormalization(unittest.TestCase):
+    """Unit tests for path scope normalization and directory boundary matching (Requirement 5)."""
+
+    def test_normalize_scope_path_valid(self):
+        self.assertEqual(normalize_scope_path("docs/foo.md"), "docs/foo.md")
+        self.assertEqual(normalize_scope_path("./docs/foo.md"), "docs/foo.md")
+        self.assertEqual(normalize_scope_path("docs/foo/"), "docs/foo")
+        self.assertEqual(normalize_scope_path("automation/runner.py"), "automation/runner.py")
+
+    def test_normalize_scope_path_rejects_traversal(self):
+        self.assertIsNone(normalize_scope_path(".."))
+        self.assertIsNone(normalize_scope_path("../docs/foo.md"))
+        self.assertIsNone(normalize_scope_path("docs/../../etc/passwd"))
+        self.assertIsNone(normalize_scope_path("docs/../bar.md"))
+
+    def test_normalize_scope_path_rejects_absolute_and_wildcards(self):
+        self.assertIsNone(normalize_scope_path("/etc/passwd"))
+        self.assertIsNone(normalize_scope_path("C:/windows/win.ini"))
+        self.assertIsNone(normalize_scope_path("."))
+        self.assertIsNone(normalize_scope_path("/"))
+        self.assertIsNone(normalize_scope_path(""))
+        self.assertIsNone(normalize_scope_path("   \n\t  "))
+
+    def test_prefix_boundary_matching_rejects_similar_sibling_names(self):
+        """Prefix 'docs/foo' must NOT authorize 'docs/foobar/file.md'."""
+        allowed_prefixes = ["docs/foo"]
+        self.assertTrue(is_path_in_scope("docs/foo/file.md", [], allowed_prefixes))
+        self.assertTrue(is_path_in_scope("docs/foo/sub/nested.md", [], allowed_prefixes))
+        self.assertTrue(is_path_in_scope("docs/foo", [], allowed_prefixes))
+        # Boundary violation: sibling directory starting with same prefix string
+        self.assertFalse(is_path_in_scope("docs/foobar/file.md", [], allowed_prefixes))
+        self.assertFalse(is_path_in_scope("docs/foobar.md", [], allowed_prefixes))
+        self.assertFalse(is_path_in_scope("docs/foo_bar/file.md", [], allowed_prefixes))
+
+    def test_exact_path_scope_matches_only_exact_file(self):
+        allowed_paths = ["docs/assessment/baseline.md"]
+        self.assertTrue(is_path_in_scope("docs/assessment/baseline.md", allowed_paths, []))
+        self.assertFalse(is_path_in_scope("docs/assessment/other.md", allowed_paths, []))
+        self.assertFalse(is_path_in_scope("docs/assessment/baseline.md/sub", allowed_paths, []))
 
 
 if __name__ == "__main__":

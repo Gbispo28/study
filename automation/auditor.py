@@ -33,6 +33,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
 
+from automation.runner import parse_task_scope, is_path_in_scope, normalize_scope_path
+
 # Defense-in-depth secret patterns
 SECRET_PATTERNS = [
     re.compile(r"\bghp_[A-Za-z0-9_]{20,80}"),
@@ -68,10 +70,10 @@ def sanitize_text(text: str) -> str:
 
 
 def scan_text_for_secrets(text: str) -> Tuple[bool, str]:
-    """Scans text for secrets without logging sensitive values."""
     for pattern in SECRET_PATTERNS:
-        if pattern.search(text):
-            return (True, f"Potential credential pattern detected (matched regex {pattern.pattern[:30]}...)")
+        match = pattern.search(text)
+        if match:
+            return (True, f"Potential secret detected matching pattern {pattern.pattern}")
     return (False, "")
 
 
@@ -79,8 +81,16 @@ def parse_auditor_response(raw_output: str) -> Tuple[bool, Dict[str, Any], str]:
     """
     Parses agy output, extracting outer envelope if present,
     then extracting and validating inner structured JSON schema.
-    Handles real agy JSON outer envelope: {"response": "..."}
-    and markdown code fences (```json ... ```).
+    Enforces full schema:
+    - verdict: APPROVED | FIX_REQUIRED | HUMAN_REQUIRED
+    - findings: list[str]
+    - requirement_coverage: list[str]
+    - confidence: HIGH | MEDIUM | LOW
+    - next_action: PROCEED | REMEDIATE | ESCALATE
+    Enforces logical consistency:
+    - APPROVED -> PROCEED
+    - FIX_REQUIRED -> REMEDIATE
+    - HUMAN_REQUIRED -> ESCALATE
     """
     cleaned_input = raw_output.strip()
     if not cleaned_input:
@@ -91,7 +101,7 @@ def parse_auditor_response(raw_output: str) -> Tuple[bool, Dict[str, Any], str]:
     try:
         envelope = json.loads(cleaned_input)
         if isinstance(envelope, dict) and "response" in envelope:
-            candidate_text = envelope["response"]
+            candidate_text = str(envelope["response"])
     except Exception:
         pass
 
@@ -115,13 +125,50 @@ def parse_auditor_response(raw_output: str) -> Tuple[bool, Dict[str, Any], str]:
     if not isinstance(data, dict):
         return (False, {}, "Parsed JSON is not an object.")
 
+    # 3. Validate verdict
     verdict = data.get("verdict")
     if verdict not in ["APPROVED", "FIX_REQUIRED", "HUMAN_REQUIRED"]:
-        return (False, {}, f"Invalid verdict in auditor payload: '{verdict}'")
+        return (False, {}, f"Invalid or missing 'verdict' in auditor payload: '{verdict}'")
 
+    # 4. Validate findings (list of str)
     findings = data.get("findings")
-    if not isinstance(findings, list):
-        return (False, {}, "Auditor findings must be a list.")
+    if not isinstance(findings, list) or not all(isinstance(x, str) for x in findings):
+        return (False, {}, "Auditor 'findings' must be a list of strings.")
+
+    # 5. Validate requirement_coverage (list of str)
+    req_cov = data.get("requirement_coverage")
+    if not isinstance(req_cov, list) or not all(isinstance(x, str) for x in req_cov):
+        return (False, {}, "Auditor 'requirement_coverage' must be a list of strings.")
+
+    # 6. Validate confidence (HIGH, MEDIUM, LOW)
+    confidence = data.get("confidence")
+    if confidence not in ["HIGH", "MEDIUM", "LOW"]:
+        return (False, {}, f"Invalid or missing 'confidence' in auditor payload: '{confidence}'")
+
+    # 7. Validate next_action (PROCEED, REMEDIATE, ESCALATE)
+    next_action = data.get("next_action")
+    if next_action not in ["PROCEED", "REMEDIATE", "ESCALATE"]:
+        return (False, {}, f"Invalid or missing 'next_action' in auditor payload: '{next_action}'")
+
+    # 8. Enforce Logical Consistency
+    if verdict == "APPROVED" and next_action != "PROCEED":
+        return (
+            False,
+            {},
+            f"Logical inconsistency: verdict 'APPROVED' requires next_action 'PROCEED', got '{next_action}'",
+        )
+    elif verdict == "FIX_REQUIRED" and next_action != "REMEDIATE":
+        return (
+            False,
+            {},
+            f"Logical inconsistency: verdict 'FIX_REQUIRED' requires next_action 'REMEDIATE', got '{next_action}'",
+        )
+    elif verdict == "HUMAN_REQUIRED" and next_action != "ESCALATE":
+        return (
+            False,
+            {},
+            f"Logical inconsistency: verdict 'HUMAN_REQUIRED' requires next_action 'ESCALATE', got '{next_action}'",
+        )
 
     return (True, data, "Valid auditor response schema.")
 
@@ -246,6 +293,21 @@ class AutomatedAuditor:
             return m2.group(1).strip()
         return None
 
+    def extract_task_type(self, task_content: str) -> Optional[str]:
+        """Extracts task_type from task specification markdown."""
+        m = re.search(r"\*\*Task Type\*\*:\s*`?([A-Za-z0-9_-]+)`?", task_content, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+        m2 = re.search(r"task_type:\s*([A-Za-z0-9_-]+)", task_content, re.IGNORECASE)
+        if m2:
+            return m2.group(1).strip()
+        return None
+
+    def extract_maintenance_mode(self, task_content: str) -> bool:
+        """Extracts maintenance_mode flag from task specification markdown."""
+        task_lower = task_content.lower()
+        return "maintenance_mode: true" in task_lower or "maintenance mode: true" in task_lower
+
     def get_repo_fingerprint(self) -> Dict[str, Any]:
         """Captures comprehensive repository fingerprint to detect any mutation."""
         try:
@@ -317,11 +379,12 @@ class AutomatedAuditor:
         commit_sha: str,
         expected_parent: Optional[str],
         task_id: str,
-        expected_task_hash: Optional[str],
+        expected_task_hash: str,
     ) -> Tuple[bool, List[str], str]:
         """
         Stage A Gate: Audits local commit existence, parent relationship,
-        changed files, protected path authorization, and secret absence.
+        task scope allowlist (defense in depth), protected path authorization,
+        and secret absence.
         """
         try:
             # 1. Verify local commit existence
@@ -332,27 +395,64 @@ class AutomatedAuditor:
             if not parent_ok:
                 return (False, [], parent_msg)
 
-            # 3. Get changed files
-            files_out = subprocess.check_output(
-                ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", commit_sha],
+            # 3. Inspect changed files with status (handling renames, deletions, additions)
+            diff_tree_out = subprocess.check_output(
+                ["git", "diff-tree", "--no-commit-id", "--name-status", "-M", "-r", commit_sha],
                 cwd=self.repo_root,
                 text=True,
             )
-            changed_files = [f.strip() for f in files_out.splitlines() if f.strip()]
+            all_paths = []
+            status_entries = []
+            for line in diff_tree_out.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split("\t")
+                status = parts[0].strip()
+                if (status.startswith("R") or status.startswith("C")) and len(parts) >= 3:
+                    old_path = parts[1].strip()
+                    new_path = parts[2].strip()
+                    status_entries.append((status, new_path, old_path))
+                    all_paths.extend([old_path, new_path])
+                elif len(parts) >= 2:
+                    path = parts[1].strip()
+                    status_entries.append((status, path, None))
+                    all_paths.append(path)
 
-            # 4. Get commit diff
+            # 4. Independent Task Scope Verification (Defense in Depth)
+            if not self.current_task_file.exists():
+                return (False, all_paths, "ScopeViolation: CURRENT_TASK.md missing during scope audit.")
+
+            task_content = self.current_task_file.read_text(encoding="utf-8")
+            allowed_paths, allowed_prefixes = parse_task_scope(task_content)
+
+            scope_violations = []
+            for status, primary_p, old_p in status_entries:
+                if not is_path_in_scope(primary_p, allowed_paths, allowed_prefixes):
+                    scope_violations.append(f"{primary_p} (status: {status})")
+                if old_p and not is_path_in_scope(old_p, allowed_paths, allowed_prefixes):
+                    scope_violations.append(f"{old_p} (rename source)")
+
+            if scope_violations:
+                return (
+                    False,
+                    all_paths,
+                    f"ScopeViolation: Commit {commit_sha[:7]} contains paths outside immutable task scope: {scope_violations}",
+                )
+
+            # 5. Get commit diff
             diff_out = subprocess.check_output(
                 ["git", "show", "--format=", commit_sha], cwd=self.repo_root, text=True
             )
 
-            # 5. Secret scan commit diff
+            # 6. Secret scan commit diff
             has_secret, secret_reason = scan_text_for_secrets(diff_out)
             if has_secret:
-                return (False, changed_files, f"SecretLeakDetected: {secret_reason}")
+                return (False, all_paths, f"SecretLeakDetected: {secret_reason}")
 
-            # 6. Protected path authorization check (Strictly from immutable CURRENT_TASK.md)
+            # 7. Protected path authorization check (Strictly from immutable CURRENT_TASK.md)
             protected_changed = []
-            for cf in changed_files:
+            for cf in all_paths:
                 for pp in PROTECTED_PATHS:
                     if cf == pp or cf.startswith(pp):
                         protected_changed.append(cf)
@@ -364,9 +464,9 @@ class AutomatedAuditor:
                     protected_files=protected_changed,
                 )
                 if not auth_ok:
-                    return (False, changed_files, auth_reason)
+                    return (False, all_paths, auth_reason)
 
-            return (True, changed_files, diff_out)
+            return (True, all_paths, diff_out)
 
         except Exception as e:
             return (False, [], f"Commit audit error: {e}")
@@ -374,7 +474,7 @@ class AutomatedAuditor:
     def verify_protected_path_authorization(
         self,
         task_id: str,
-        expected_hash: Optional[str],
+        expected_hash: str,
         protected_files: List[str],
     ) -> Tuple[bool, str]:
         """
@@ -388,11 +488,18 @@ class AutomatedAuditor:
                 f"ProtectedPathBreach: Protected paths {protected_files} modified, but CURRENT_TASK.md is missing.",
             )
 
-        actual_hash = self.compute_file_hash(self.current_task_file)
-        if expected_hash and actual_hash != expected_hash:
+        if not expected_hash or not isinstance(expected_hash, str) or not re.match(r"^[a-fA-F0-9]{64}$", expected_hash.strip()):
             return (
                 False,
-                f"ProtectedPathBreach: Protected paths {protected_files} modified, but task content hash mismatch.",
+                f"ProtectedPathBreach: Protected paths {protected_files} modified, but expected content hash is missing or malformed.",
+            )
+
+        actual_hash = self.compute_file_hash(self.current_task_file)
+        if actual_hash != expected_hash.strip():
+            return (
+                False,
+                f"ProtectedPathBreach: Protected paths {protected_files} modified, but task content hash mismatch "
+                f"(expected {expected_hash}, actual {actual_hash}).",
             )
 
         task_content = self.current_task_file.read_text(encoding="utf-8").lower()
@@ -708,14 +815,56 @@ allowed_path_prefixes:
         self.human_action_file.write_text(content, encoding="utf-8")
 
     def generate_corrective_task(self, original_task_id: str, feedback: str, retry_count: int) -> str:
-        """Generates a corrective task in CURRENT_TASK.md with parent_task_id."""
+        """
+        Generates a corrective task in CURRENT_TASK.md with parent_task_id.
+        Invariants:
+        - Preserves the ORIGINAL task's allowed_paths.
+        - Preserves the ORIGINAL task's allowed_path_prefixes.
+        - Preserves the ORIGINAL task's task_type and maintenance_mode.
+        - Strictly NEVER broadens permissions or grants default repo/docs access.
+        """
+        allowed_paths = []
+        allowed_prefixes = []
+        task_type = "REFACTOR"
+        is_maint = False
+
+        if self.current_task_file.exists():
+            try:
+                orig_text = self.current_task_file.read_text(encoding="utf-8")
+                allowed_paths, allowed_prefixes = parse_task_scope(orig_text)
+                extracted_type = self.extract_task_type(orig_text)
+                if extracted_type:
+                    task_type = extracted_type
+                is_maint = self.extract_maintenance_mode(orig_text)
+            except Exception as e:
+                self.logger.warn(f"Failed to parse original task scope for remediation: {e}")
+
+        scope_lines = ["### Allowed Paths (Machine-Enforceable Scope)"]
+        if allowed_paths:
+            scope_lines.append("allowed_paths:")
+            for ap in allowed_paths:
+                scope_lines.append(f"  - {ap}")
+        else:
+            scope_lines.append("allowed_paths: []")
+
+        if allowed_prefixes:
+            scope_lines.append("allowed_path_prefixes:")
+            for pref in allowed_prefixes:
+                scope_lines.append(f"  - {pref}")
+        else:
+            scope_lines.append("allowed_path_prefixes: []")
+
+        scope_block = "\n".join(scope_lines)
+
         content = f"""# Task: {original_task_id} (Remediation Attempt {retry_count + 1})
 
 ## Metadata
 - **Task ID**: `{original_task_id}`
 - **Parent Task ID**: `{original_task_id}`
-- **Task Type**: `REFACTOR`
-- **Maintenance Mode**: `false`
+- **Task Type**: `{task_type}`
+- **Maintenance Mode**: `{str(is_maint).lower()}`
+
+{scope_block}
 
 ## 1. Remediation Directive
 The previous execution was rejected by the Automated Auditor.
@@ -772,7 +921,7 @@ Ensure `bash scripts/quality_gate.sh` passes before completion.
         execution_id = state.get("execution_id", "UNKNOWN_EXEC")
         commit_sha = state.get("resulting_git_head", "")
         expected_parent = state.get("expected_git_head")
-        expected_task_hash = state.get("content_hash")
+        raw_expected_task_hash = state.get("content_hash")
         max_retries = state.get("max_retries", 3)
         retry_count = state.get("retry_count", 0)
         current_version = state.get("state_version", 1)
@@ -789,6 +938,20 @@ Ensure `bash scripts/quality_gate.sh` passes before completion.
         # =========================================================================
         # CONTROL PLANE IMMUTABILITY GATE (Mandatory for EVERY task)
         # =========================================================================
+        if not raw_expected_task_hash or not isinstance(raw_expected_task_hash, str) or not re.match(r"^[a-fA-F0-9]{64}$", raw_expected_task_hash.strip()):
+            err_msg = (
+                f"ControlPlaneIntegrityViolation: STATE.content_hash is missing, empty, or malformed "
+                f"(expected 64-character SHA-256 hex string, found: '{raw_expected_task_hash}'). "
+                "Hash integrity is mandatory for all tasks."
+            )
+            self.logger.error(err_msg)
+            state["state"] = "ERROR"
+            state["last_error"] = err_msg
+            self.save_state(state, expected_version=current_version)
+            return False
+
+        expected_task_hash = raw_expected_task_hash.strip()
+
         if not self.current_task_file.exists():
             err_msg = "ControlPlaneIntegrityViolation: CURRENT_TASK.md is missing before audit."
             self.logger.error(err_msg)
@@ -798,7 +961,7 @@ Ensure `bash scripts/quality_gate.sh` passes before completion.
             return False
 
         actual_task_hash = self.compute_file_hash(self.current_task_file)
-        if expected_task_hash and actual_task_hash != expected_task_hash:
+        if actual_task_hash != expected_task_hash:
             err_msg = (
                 f"ControlPlaneIntegrityViolation: CURRENT_TASK.md hash mismatch "
                 f"(expected {expected_task_hash}, actual {actual_task_hash}). "
@@ -812,7 +975,15 @@ Ensure `bash scripts/quality_gate.sh` passes before completion.
 
         task_content = self.current_task_file.read_text(encoding="utf-8")
         file_task_id = self.extract_task_id(task_content)
-        if file_task_id and file_task_id != task_id:
+        if not file_task_id:
+            err_msg = "ControlPlaneIntegrityViolation: Missing or unparseable Task ID in CURRENT_TASK.md."
+            self.logger.error(err_msg)
+            state["state"] = "ERROR"
+            state["last_error"] = err_msg
+            self.save_state(state, expected_version=current_version)
+            return False
+
+        if file_task_id != task_id:
             err_msg = (
                 f"ControlPlaneIntegrityViolation: task_id mismatch in CURRENT_TASK.md "
                 f"(file specifies '{file_task_id}', state specifies '{task_id}')."
